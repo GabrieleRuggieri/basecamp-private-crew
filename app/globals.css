@@ -1,0 +1,239 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================
+   BASECAMP — Ispirato a Datapizza
+   Font Geist, design pulito, minimal, tech-forward.
+   Nero, bianco, accenti distinti per sezione.
+   ============================================ */
+
+:root {
+  /* Backgrounds */
+  --bg-primary: #000000;
+  --bg-secondary: #0a0a0a;
+  --surface: #0f0f0f;
+  --surface-elevated: #171717;
+  --surface-hover: #1f1f1f;
+  --surface-glass: rgba(15, 15, 15, 0.85);
+
+  /* Accents — vividi, distinti per sezione */
+  --accent-red: #ef4444;      /* Gym */
+  --accent-blue: #3b82f6;     /* Travels */
+  --accent-purple: #a855f7;   /* Thoughts */
+  --accent-orange: #f97316;    /* Watchlist */
+  --accent-green: #22c55e;     /* Moments */
+
+  /* Text */
+  --text-primary: #ffffff;
+  --text-secondary: rgba(255, 255, 255, 0.7);
+  --text-tertiary: rgba(255, 255, 255, 0.45);
+
+  /* UI */
+  --separator: rgba(255, 255, 255, 0.08);
+  --card-border: rgba(255, 255, 255, 0.06);
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+}
+
+/* Base */
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    font-size: 16px;
+    line-height: 1.5;
+    letter-spacing: -0.01em;
+    min-height: 100dvh;
+    min-height: 100vh;
+  }
+
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top, 0);
+  }
+}
+
+/* Components */
+@layer components {
+  .card {
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--card-border);
+    background-color: var(--surface);
+    transition: border-color 0.2s ease, transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .card-elevated {
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--card-border);
+    background-color: var(--surface-elevated);
+  }
+
+  .glass {
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    background-color: var(--surface-glass);
+  }
+
+  .btn {
+    min-height: 50px;
+    border-radius: var(--radius-md);
+    font-size: 17px;
+    font-weight: 500;
+    letter-spacing: -0.022em;
+    transition: transform 0.15s ease, opacity 0.15s ease;
+  }
+
+  .btn:active {
+    transform: scale(0.98);
+    opacity: 0.9;
+  }
+
+  .tap-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  .section-title {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+  }
+
+  .page-title {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.04em;
+    color: var(--text-primary);
+  }
+}
+
+@layer utilities {
+  .transition-smooth {
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .tap-scale:active {
+    transform: scale(0.97);
+  }
+}
+
+/* Animations */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-up {
+  from {
+    transform: translateY(100%);
+    opacity: 0.6;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.4s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+}
+
+.animate-slide-up {
+  animation: slide-up 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.animate-scale-in {
+  animation: scale-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.animate-delay-1 { animation-delay: 50ms; }
+.animate-delay-2 { animation-delay: 100ms; }
+.animate-delay-3 { animation-delay: 150ms; }
+.animate-delay-4 { animation-delay: 200ms; }
+.animate-delay-5 { animation-delay: 250ms; }
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Page content fade */
+.page-content {
+  animation: fade-in 0.4s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+}
+
+/* NFC animations */
+@keyframes nfc-pulse {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.05); }
+}
+
+@keyframes nfc-ripple {
+  0% { opacity: 0.6; transform: scale(0.8); }
+  100% { opacity: 0; transform: scale(1.5); }
+}
+
+@keyframes nfc-tunnel {
+  0% { opacity: 1; transform: scale(1); }
+  40% { opacity: 1; transform: scale(4); }
+  100% { opacity: 0; transform: scale(12); }
+}
+
+@keyframes nfc-tunnel-ring {
+  0% { opacity: 0.6; transform: scale(0.5); }
+  100% { opacity: 0; transform: scale(6); }
+}
+
+.animate-nfc-pulse {
+  animation: nfc-pulse 1.5s ease-in-out infinite;
+}
+
+.animate-nfc-tunnel {
+  animation: nfc-tunnel 1.2s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
+}
+
+.animate-nfc-tunnel-ring {
+  animation: nfc-tunnel-ring 1.2s ease-out forwards;
+}
+
+.animate-nfc-tunnel-ring-2 {
+  animation: nfc-tunnel-ring 1.2s ease-out 0.15s forwards;
+}
+
+.animate-nfc-tunnel-ring-3 {
+  animation: nfc-tunnel-ring 1.2s ease-out 0.3s forwards;
+}
+
