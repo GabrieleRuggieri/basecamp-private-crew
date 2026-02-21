@@ -1,6 +1,6 @@
 -- ============================================
--- BASECAMP DB init — esegui nel SQL Editor di Supabase
--- Tabelle: members (token NFC), admin_config, gym, travels, thoughts, watchlist, moments, reactions
+-- 1. TABELLE — Crea tutte le tabelle
+-- Esegui per primo nel SQL Editor di Supabase
 -- ============================================
 
 -- Members
@@ -20,10 +20,11 @@ create table admin_config (
   admin_token text unique not null default encode(gen_random_bytes(32), 'hex')
 );
 
--- GYM: Sessions
+-- TRAINING: Sessions (gym, tricking, calisthenics)
 create table gym_sessions (
   id uuid primary key default gen_random_uuid(),
   member_id uuid references members(id) on delete cascade,
+  type text default 'gym' check (type in ('gym', 'tricking', 'calisthenics')),
   started_at timestamptz default now(),
   ended_at timestamptz,
   duration_minutes int,
@@ -43,16 +44,17 @@ create table gym_sets (
   created_at timestamptz default now()
 );
 
--- GYM: Personal Records
+-- TRAINING: Personal Records (per type: gym, tricking, calisthenics)
 create table gym_prs (
   id uuid primary key default gen_random_uuid(),
   member_id uuid references members(id) on delete cascade,
   exercise_name text not null,
+  type text default 'gym' check (type in ('gym', 'tricking', 'calisthenics')),
   weight_kg numeric(5,2),
   reps int,
   achieved_at timestamptz default now(),
   session_id uuid references gym_sessions(id),
-  unique(member_id, exercise_name)
+  unique(member_id, exercise_name, type)
 );
 
 -- TRAVELS
@@ -78,6 +80,14 @@ create table thoughts (
   created_at timestamptz default now()
 );
 
+-- THOUGHT_TAGS: side_quest, riflessione, proposta (uno o più per pensiero)
+create table thought_tags (
+  id uuid primary key default gen_random_uuid(),
+  thought_id uuid references thoughts(id) on delete cascade,
+  tag text not null check (tag in ('side_quest', 'riflessione', 'proposta')),
+  unique(thought_id, tag)
+);
+
 -- WATCHLIST
 create table watchlist (
   id uuid primary key default gen_random_uuid(),
@@ -101,13 +111,15 @@ create table moments (
   location text
 );
 
--- REACTIONS
+-- REACTIONS (emoji o commento, uno per membro per target)
 create table reactions (
   id uuid primary key default gen_random_uuid(),
   member_id uuid references members(id) on delete cascade,
   target_type text not null,
   target_id uuid not null,
-  emoji text not null,
+  emoji text,
+  comment text,
   created_at timestamptz default now(),
+  check ((emoji is not null and comment is null) or (emoji is null and comment is not null)),
   unique(member_id, target_type, target_id)
 );

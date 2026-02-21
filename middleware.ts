@@ -8,7 +8,7 @@ import type { NextRequest } from 'next/server';
 
 const PROTECTED_PATHS = [
   '/home',
-  '/gym',
+  '/training',
   '/travels',
   '/thoughts',
   '/watchlist',
@@ -19,6 +19,12 @@ const BYPASS_PATHS = ['/enter', '/admin'];
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // Redirect /gym -> /training/gym (backwards compatibility)
+  if (pathname === '/gym' || pathname.startsWith('/gym/')) {
+    const newPath = pathname.replace(/^\/gym/, '/training/gym');
+    return NextResponse.redirect(new URL(newPath, request.url));
+  }
 
   // Bypass per /enter/[token] e /admin/[token]
   if (pathname.startsWith('/enter/') || pathname.startsWith('/admin/')) {

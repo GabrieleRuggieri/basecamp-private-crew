@@ -26,8 +26,8 @@ npm run dev
 
 ### 2. Database Supabase
 
-1. Esegui `supabase/schema.sql` nel SQL Editor di Supabase (crea le tabelle).
-2. Esegui `supabase/seed.sql` per il primo setup:
+1. Esegui `supabase/01-schema.sql` nel SQL Editor di Supabase (crea le tabelle).
+2. Esegui `supabase/02-seed.sql` per il primo setup:
 
 ```sql
 INSERT INTO members (name, emoji, role) 

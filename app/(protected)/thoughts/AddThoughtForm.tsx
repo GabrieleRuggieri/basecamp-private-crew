@@ -1,37 +1,40 @@
 /**
- * Form per aggiungere un pensiero: textarea, mood tag, checkbox anonimo.
+ * Form per aggiungere un pensiero: textarea, tags (side quest, riflessione, proposta), checkbox anonimo.
  * Dopo submit: addThought, router.refresh per aggiornamento in tempo reale.
  */
 'use client';
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { addThought } from '@/lib/actions/thoughts';
+import { addThought, type ThoughtTag } from '@/lib/actions/thoughts';
 import { cn } from '@/lib/utils';
 
-const MOOD_TAGS = [
-  'reflective',
-  'hyped',
-  'grateful',
-  'random',
-  'deep',
-  'funny',
-] as const;
+const THOUGHT_TAGS: { value: ThoughtTag; label: string }[] = [
+  { value: 'side_quest', label: 'Side quest' },
+  { value: 'riflessione', label: 'Riflessione' },
+  { value: 'proposta', label: 'Proposta' },
+];
 
 export function AddThoughtForm({ memberId }: { memberId: string }) {
   const router = useRouter();
   const [content, setContent] = useState('');
-  const [moodTag, setMoodTag] = useState<string | null>(null);
+  const [tags, setTags] = useState<ThoughtTag[]>([]);
   const [anonymous, setAnonymous] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const toggleTag = (tag: ThoughtTag) => {
+    setTags((prev) =>
+      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+    );
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!content.trim() || isSubmitting) return;
     setIsSubmitting(true);
-    await addThought(memberId, content.trim(), moodTag, anonymous);
+    await addThought(memberId, content.trim(), tags, anonymous);
     setContent('');
-    setMoodTag(null);
+    setTags([]);
     router.refresh();
     setIsSubmitting(false);
   };
@@ -46,19 +49,19 @@ export function AddThoughtForm({ memberId }: { memberId: string }) {
         required
       />
       <div className="flex flex-wrap gap-2 mt-3">
-        {MOOD_TAGS.map((tag) => (
+        {THOUGHT_TAGS.map(({ value, label }) => (
           <button
-            key={tag}
+            key={value}
             type="button"
-            onClick={() => setMoodTag(moodTag === tag ? null : tag)}
+            onClick={() => toggleTag(value)}
             className={cn(
               'px-3 py-1.5 rounded-lg text-footnote font-medium transition-colors',
-              moodTag === tag
+              tags.includes(value)
                 ? 'bg-accent-purple/25 text-accent-purple'
                 : 'bg-surface-elevated text-text-tertiary hover:text-text-secondary'
             )}
           >
-            {tag}
+            {label}
           </button>
         ))}
       </div>

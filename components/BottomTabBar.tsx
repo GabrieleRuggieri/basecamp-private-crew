@@ -18,7 +18,7 @@ import { cn } from '@/lib/utils';
 
 const TABS = [
   { href: '/home', icon: Home, label: 'Home', section: null },
-  { href: '/gym', icon: Dumbbell, label: 'Gym', section: 'gym' },
+  { href: '/training', icon: Dumbbell, label: 'Training', section: 'gym' },
   { href: '/travels', icon: Plane, label: 'Travels', section: 'travels' },
   { href: '/thoughts', icon: Brain, label: 'Thoughts', section: 'thoughts' },
   { href: '/watchlist', icon: Tv, label: 'Watchlist', section: 'watchlist' },

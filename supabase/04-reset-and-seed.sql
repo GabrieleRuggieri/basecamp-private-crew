@@ -1,7 +1,7 @@
 -- ============================================
--- BASECAMP: svuota e ricrea
--- 1 utente (Gabriele) + 1 admin_token
--- Esegui nel SQL Editor di Supabase
+-- 4. RESET — Svuota e ricrea
+-- Elimina members e admin_config (cascade pulisce tutto)
+-- Ricrea 1 membro (Gabriele) + admin_config
 -- ============================================
 
 -- 1. Svuota (cascade pulisce le tabelle collegate)
@@ -10,7 +10,7 @@ DELETE FROM members;
 
 -- 2. Crea 1 membro
 INSERT INTO members (name, emoji, role) VALUES
-  ('Gabriele', '👑', 'admin');
+  ('Gabriele', '💻', 'admin');
 
 -- 3. Crea admin_config
 INSERT INTO admin_config DEFAULT VALUES;

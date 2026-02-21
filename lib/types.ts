@@ -46,11 +46,14 @@ export type Travel = {
   visited_at: string | null;
 };
 
+export type ThoughtTag = 'side_quest' | 'riflessione' | 'proposta';
+
 export type Thought = {
   id: string;
   member_id: string;
   content: string;
-  mood_tag: string | null;
+  mood_tag?: string | null;
+  tags: ThoughtTag[];
   anonymous: boolean;
   created_at: string;
 };
@@ -76,5 +79,6 @@ export type Reaction = {
   member_id: string;
   target_type: string;
   target_id: string;
-  emoji: string;
+  emoji: string | null;
+  comment: string | null;
 };

@@ -1,11 +1,12 @@
 -- ============================================
--- Seed iniziale: primo membro admin, admin_config, recupera token
--- Esegui dopo schema.sql
+-- 2. SEED — Admin + primo utente
+-- Esegui dopo 01-schema.sql
+-- Modifica 'TuoNome' se serve
 -- ============================================
 
 -- 1. Inserisci il primo membro (admin)
 INSERT INTO members (name, emoji, role) 
-VALUES ('TuoNome', '👑', 'admin');
+VALUES ('Gabriele', '💻', 'admin');
 
 -- 2. Crea la riga admin config
 INSERT INTO admin_config DEFAULT VALUES;
