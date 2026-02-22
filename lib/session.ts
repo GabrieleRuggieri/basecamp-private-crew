@@ -10,6 +10,7 @@ export const sessionOptions: SessionOptions = {
   cookieName: 'basecamp_session',
   ttl: 60 * 60 * 24 * 30, // 30 days in seconds
   cookieOptions: {
+    path: '/',
     secure: process.env.NODE_ENV === 'production',
     httpOnly: true,
     sameSite: 'lax',

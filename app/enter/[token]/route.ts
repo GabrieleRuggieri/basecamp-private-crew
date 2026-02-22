@@ -1,12 +1,16 @@
 /**
  * Route Handler: /enter/[token] — login via NFC.
- * Usa (request, response) con iron-session: cookies() + redirect non merge in locale.
+ * Usa cookies() da next/headers (come auth) per consistenza.
+ * destroy() prima di salvare per forzare sostituzione cookie su cambio utente.
  */
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import { getIronSession } from 'iron-session';
 import { validateNfcToken } from '@/lib/validate-token';
 import { sessionOptions } from '@/lib/session';
 import type { BasecampSession } from '@/lib/types';
+
+export const dynamic = 'force-dynamic';
 
 export async function GET(
   request: Request,
@@ -22,22 +26,18 @@ export async function GET(
     );
   }
 
-  const html = `<!DOCTYPE html><html lang="it"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><meta http-equiv="refresh" content="0;url=/enter/transition"/><title>BASECAMP</title></head><body style="background:#000;color:rgba(255,255,255,0.6);display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;font-family:-apple-system,sans-serif"><p>Entro...</p></body></html>`;
-  const response = new NextResponse(html, {
-    status: 200,
-    headers: {
-      'Content-Type': 'text/html',
-      'Cache-Control': 'no-store, no-cache, must-revalidate',
-    },
-  });
-
+  const cookieStore = await cookies();
   const ironSession = await getIronSession<{ user?: BasecampSession }>(
-    request,
-    response,
+    cookieStore,
     sessionOptions
   );
+
+  ironSession.destroy();
   ironSession.user = sessionData;
   await ironSession.save();
 
-  return response;
+  const url = new URL(request.url);
+  const redirect = NextResponse.redirect(new URL('/enter/transition', url.origin), 302);
+  redirect.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+  return redirect;
 }
