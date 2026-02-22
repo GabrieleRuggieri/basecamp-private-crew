@@ -1,7 +1,7 @@
 /**
  * Valida il token NFC e restituisce i dati del membro.
- * In prod (Vercel): solo token reali da members.
- * In dev (locale): accetta DEV_NFC_TOKEN per simulazione (usa primo membro attivo).
+ * In dev: se token === DEV_NFC_TOKEN → primo membro creato (per Simula NFC).
+ * Altrimenti: cerca membro per token nel DB.
  */
 import { supabase } from '@/lib/supabase';
 import type { BasecampSession } from '@/lib/types';
@@ -9,7 +9,7 @@ import type { BasecampSession } from '@/lib/types';
 const isDev = process.env.NODE_ENV === 'development';
 
 export async function validateNfcToken(token: string): Promise<BasecampSession | null> {
-  // Dev: simula NFC con DEV_NFC_TOKEN → primo membro attivo
+  // Dev: Simula NFC → primo membro attivo (come prima)
   if (isDev) {
     const devToken = process.env.DEV_NFC_TOKEN;
     if (devToken && token === devToken) {
@@ -27,7 +27,7 @@ export async function validateNfcToken(token: string): Promise<BasecampSession |
     }
   }
 
-  // Prod: valida token reale (64 hex)
+  // Cerca membro per token (prod o dev con URL diretto /enter/[token])
   if (!/^[a-fA-F0-9]{64}$/.test(token)) {
     return null;
   }
