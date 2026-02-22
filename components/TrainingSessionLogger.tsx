@@ -57,7 +57,7 @@ export function TrainingSessionLogger({
   const [note, setNote] = useState('');
   const [isFinishing, setIsFinishing] = useState(false);
   const [newPr, setNewPr] = useState<string | null>(null);
-  const [prExercises, setPrExercises] = useState<Set<string>>(new Set());
+  const [prExercises, setPrExercises] = useState<string[]>([]);
 
   const accent = ACCENT_BY_TYPE[type];
 
@@ -109,7 +109,7 @@ export function TrainingSessionLogger({
     }
 
     const durationMinutes = Math.ceil(elapsed / 60);
-    const prList = type === 'gym' ? Array.from(prExercises) : [];
+    const prList = type === 'gym' ? prExercises : [];
     const prResult = await finishGymSession(
       sessionId,
       memberId,
@@ -266,21 +266,20 @@ export function TrainingSessionLogger({
                       key={ex}
                       className={cn(
                         'inline-flex items-center gap-2 px-3 py-2 rounded-button border cursor-pointer tap-target',
-                        prExercises.has(ex)
+                        prExercises.includes(ex)
                           ? `bg-[var(--${accent})]/20 border-[var(--${accent})]`
                           : 'bg-surface-elevated border-separator'
                       )}
                     >
                       <input
                         type="checkbox"
-                        checked={prExercises.has(ex)}
+                        checked={prExercises.includes(ex)}
                         onChange={(e) => {
-                          setPrExercises((prev) => {
-                            const next = new Set(prev);
-                            if (e.target.checked) next.add(ex);
-                            else next.delete(ex);
-                            return next;
-                          });
+                          setPrExercises((prev) =>
+                            e.target.checked
+                              ? [...prev, ex]
+                              : prev.filter((x) => x !== ex)
+                          );
                         }}
                         className="sr-only"
                       />

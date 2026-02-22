@@ -55,11 +55,8 @@ export default async function HomePage() {
       <section className="relative px-5 pb-8">
         {!hasAny ? (
           <div className="card p-10 rounded-2xl flex flex-col items-center justify-center text-center border-dashed border-2 border-white/10">
-            <div className="w-14 h-14 rounded-full bg-surface-elevated flex items-center justify-center mb-4">
-              <Brain className="w-7 h-7 text-text-tertiary" />
-            </div>
             <p className="text-subhead text-text-secondary font-medium">
-              Nessun post ancora
+              Nessuna attività
             </p>
             <p className="text-caption text-text-tertiary mt-2">
               Inizia da Thoughts, Training, Travels, Watchlist o Moments
