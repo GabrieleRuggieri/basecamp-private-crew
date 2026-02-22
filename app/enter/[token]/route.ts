@@ -1,10 +1,9 @@
 /**
  * Route Handler: /enter/[token] — login via NFC.
- * Usa cookies() da next/headers (come auth) per consistenza.
+ * Usa (request, response) così il cookie viene scritto direttamente sulla risposta.
  * destroy() prima di salvare per forzare sostituzione cookie su cambio utente.
  */
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 import { getIronSession } from 'iron-session';
 import { validateNfcToken } from '@/lib/validate-token';
 import { sessionOptions } from '@/lib/session';
@@ -26,18 +25,18 @@ export async function GET(
     );
   }
 
-  const cookieStore = await cookies();
+  const url = new URL(request.url);
+  const response = NextResponse.redirect(new URL('/enter/transition', url.origin), 302);
+  response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+
   const ironSession = await getIronSession<{ user?: BasecampSession }>(
-    cookieStore,
+    request,
+    response,
     sessionOptions
   );
-
   ironSession.destroy();
   ironSession.user = sessionData;
   await ironSession.save();
 
-  const url = new URL(request.url);
-  const redirect = NextResponse.redirect(new URL('/enter/transition', url.origin), 302);
-  redirect.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate');
-  return redirect;
+  return response;
 }
