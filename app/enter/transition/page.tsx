@@ -2,18 +2,18 @@
 
 /**
  * Pagina transizione: animazione tunnel NFC che si allarga e porta alla home.
+ * Usa window.location per forzare full page load → sessione fresca dal server.
  */
 import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { NfcIcon } from '@/components/NfcIcon';
 
 export default function EnterTransitionPage() {
-  const router = useRouter();
-
   useEffect(() => {
-    const t = setTimeout(() => router.replace('/home'), 1200);
+    const t = setTimeout(() => {
+      window.location.replace('/home');
+    }, 1200);
     return () => clearTimeout(t);
-  }, [router]);
+  }, []);
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center bg-bg-primary overflow-hidden">
