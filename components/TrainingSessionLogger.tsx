@@ -57,6 +57,7 @@ export function TrainingSessionLogger({
   const [note, setNote] = useState('');
   const [isFinishing, setIsFinishing] = useState(false);
   const [newPr, setNewPr] = useState<string | null>(null);
+  const [prExercises, setPrExercises] = useState<Set<string>>(new Set());
 
   const accent = ACCENT_BY_TYPE[type];
 
@@ -108,7 +109,15 @@ export function TrainingSessionLogger({
     }
 
     const durationMinutes = Math.ceil(elapsed / 60);
-    const prResult = await finishGymSession(sessionId, memberId, mood!, note, durationMinutes);
+    const prList = type === 'gym' ? Array.from(prExercises) : [];
+    const prResult = await finishGymSession(
+      sessionId,
+      memberId,
+      mood!,
+      note,
+      durationMinutes,
+      prList
+    );
     setShowFinishSheet(false);
 
     if (prResult?.exercise) {
@@ -244,6 +253,44 @@ export function TrainingSessionLogger({
         title="Come ti senti?"
       >
         <div className="space-y-6">
+          {type === 'gym' && (() => {
+            const uniqueExercises = Array.from(
+              new Set(sets.map((s) => s.exercise.trim()).filter(Boolean))
+            );
+            return uniqueExercises.length > 0 ? (
+              <div>
+                <label className="text-text-secondary text-sm block mb-2">PR (marca se hai fatto record)</label>
+                <div className="flex flex-wrap gap-2">
+                  {uniqueExercises.map((ex) => (
+                    <label
+                      key={ex}
+                      className={cn(
+                        'inline-flex items-center gap-2 px-3 py-2 rounded-button border cursor-pointer tap-target',
+                        prExercises.has(ex)
+                          ? `bg-[var(--${accent})]/20 border-[var(--${accent})]`
+                          : 'bg-surface-elevated border-separator'
+                      )}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={prExercises.has(ex)}
+                        onChange={(e) => {
+                          setPrExercises((prev) => {
+                            const next = new Set(prev);
+                            if (e.target.checked) next.add(ex);
+                            else next.delete(ex);
+                            return next;
+                          });
+                        }}
+                        className="sr-only"
+                      />
+                      <span className="text-sm text-text-primary">{ex}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            ) : null;
+          })()}
           <div className="flex gap-3 flex-wrap">
             {MOODS.map((m) => (
               <button

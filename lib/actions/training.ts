@@ -65,7 +65,8 @@ export async function finishGymSession(
   memberId: string,
   moodEmoji: string,
   note: string,
-  durationMinutes: number
+  durationMinutes: number,
+  prExercises: string[] = []
 ): Promise<{ exercise: string } | null> {
   const moodInt = MOOD_EMOJI_TO_INT[moodEmoji] ?? 3;
 
@@ -92,8 +93,37 @@ export async function finishGymSession(
 
   let newPrExercise: string | null = null;
 
-  // Tricking non ha PR
-  if (sessionType !== 'tricking') {
+  // PR manuali solo per gym: checkbox per esercizio
+  if (sessionType === 'gym' && prExercises.length > 0 && sets?.length) {
+    const byExercise = new Map<string, { weight_kg: number | null; reps: number | null }[]>();
+    for (const s of sets) {
+      const name = s.exercise_name?.trim();
+      if (!name || !prExercises.includes(name)) continue;
+      const arr = byExercise.get(name) ?? [];
+      arr.push({ weight_kg: s.weight_kg, reps: s.reps });
+      byExercise.set(name, arr);
+    }
+    for (const [ex, arr] of byExercise) {
+      const best = arr.reduce((a, b) => {
+        const aBetter =
+          (a.weight_kg ?? 0) > (b.weight_kg ?? 0) ||
+          ((a.weight_kg ?? 0) === (b.weight_kg ?? 0) && (a.reps ?? 0) > (b.reps ?? 0));
+        return aBetter ? a : b;
+      });
+      const isPr = await checkForPr(
+        session.member_id,
+        ex,
+        best.weight_kg ?? null,
+        best.reps ?? null,
+        sessionId,
+        'gym'
+      );
+      if (isPr) newPrExercise = ex;
+    }
+  }
+
+  // Calisthenics: PR automatici (nessuna checkbox)
+  if (sessionType === 'calisthenics') {
     for (const set of sets || []) {
       const isPr = await checkForPr(
         session.member_id,
@@ -101,7 +131,7 @@ export async function finishGymSession(
         set.weight_kg ?? null,
         set.reps ?? null,
         sessionId,
-        sessionType
+        'calisthenics'
       );
       if (isPr) newPrExercise = set.exercise_name;
     }

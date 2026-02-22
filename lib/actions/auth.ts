@@ -24,7 +24,7 @@ export async function getSession(): Promise<BasecampSession | null> {
 
   const { data } = await supabase
     .from('members')
-    .select('id')
+    .select('id, name, emoji, role')
     .eq('id', user.memberId)
     .eq('is_active', true)
     .single();
@@ -33,5 +33,10 @@ export async function getSession(): Promise<BasecampSession | null> {
     redirect('/api/logout');
   }
 
-  return user;
+  return {
+    memberId: data.id,
+    name: data.name,
+    emoji: data.emoji,
+    role: data.role,
+  };
 }

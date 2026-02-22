@@ -1,5 +1,5 @@
 /**
- * Server Actions per reazioni (emoji o commento su thoughts, moments, ecc).
+ * Server Actions per reazioni (emoji o commento su thoughts e crew).
  * addReaction: aggiunge/toggle reazione emoji (upsert).
  * addComment: aggiunge/sostituisce commento (upsert).
  * removeReaction: rimuove la reazione del membro (solo la propria).
@@ -80,6 +80,20 @@ export async function getReactionsForTargets(
   return result;
 }
 
+function revalidateReactionPaths(targetType: string) {
+  revalidatePath('/thoughts');
+  revalidatePath('/home');
+  if (targetType.startsWith('crew_')) {
+    const type = targetType.replace('crew_', '');
+    revalidatePath(`/training/${type}/crew`);
+  }
+  if (targetType === 'gym_session') {
+    revalidatePath('/training/gym/crew');
+    revalidatePath('/training/tricking/crew');
+    revalidatePath('/training/calisthenics/crew');
+  }
+}
+
 export async function addReaction(targetType: string, targetId: string, emoji: string) {
   const session = await getSession();
   if (!session) return;
@@ -89,8 +103,7 @@ export async function addReaction(targetType: string, targetId: string, emoji: s
     { onConflict: 'member_id,target_type,target_id' }
   );
   if (error) console.error('addReaction', error);
-  revalidatePath('/thoughts');
-  revalidatePath('/home');
+  revalidateReactionPaths(targetType);
 }
 
 export async function addComment(targetType: string, targetId: string, comment: string) {
@@ -105,8 +118,7 @@ export async function addComment(targetType: string, targetId: string, comment: 
     { onConflict: 'member_id,target_type,target_id' }
   );
   if (error) console.error('addComment', error);
-  revalidatePath('/thoughts');
-  revalidatePath('/home');
+  revalidateReactionPaths(targetType);
 }
 
 export async function removeReaction(targetType: string, targetId: string) {
@@ -120,6 +132,5 @@ export async function removeReaction(targetType: string, targetId: string) {
     .eq('target_type', targetType)
     .eq('target_id', targetId);
   if (error) console.error('removeReaction', error);
-  revalidatePath('/thoughts');
-  revalidatePath('/home');
+  revalidateReactionPaths(targetType);
 }
