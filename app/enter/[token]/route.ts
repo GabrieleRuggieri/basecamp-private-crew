@@ -34,7 +34,6 @@ export async function GET(
     response,
     sessionOptions
   );
-  ironSession.destroy();
   ironSession.user = sessionData;
   await ironSession.save();
 

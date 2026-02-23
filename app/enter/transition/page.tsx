@@ -11,7 +11,7 @@ export default function EnterTransitionPage() {
   useEffect(() => {
     const t = setTimeout(() => {
       // Cache-busting: evita che il Service Worker restituisca /home in cache
-      window.location.replace(`/home?t=${Date.now()}`);
+      window.location.replace('/home');
     }, 1200);
     return () => clearTimeout(t);
   }, []);
