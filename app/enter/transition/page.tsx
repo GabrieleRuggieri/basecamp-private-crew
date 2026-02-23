@@ -9,8 +9,7 @@ import { NfcIcon } from '@/components/NfcIcon';
 export default function EnterTransitionPage() {
   useEffect(() => {
     const t = setTimeout(() => {
-      // Cache-busting: forza richiesta fresca con cookie aggiornato
-      window.location.replace(`/home?_=${Date.now()}`);
+      window.location.replace('/home');
     }, 1200);
     return () => clearTimeout(t);
   }, []);
