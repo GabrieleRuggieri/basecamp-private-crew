@@ -1,7 +1,6 @@
 /**
  * Route Handler: /enter/[token] — login via NFC.
- * Usa (request, response) così il cookie viene scritto direttamente sulla risposta.
- * destroy() prima di salvare per forzare sostituzione cookie su cambio utente.
+ * Risposta 200 + meta refresh (non 302): alcuni browser gestiscono meglio i cookie.
  */
 import { NextResponse } from 'next/server';
 import { getIronSession } from 'iron-session';
@@ -25,9 +24,15 @@ export async function GET(
     );
   }
 
-  const url = new URL(request.url);
-  const response = NextResponse.redirect(new URL('/enter/transition', url.origin), 302);
-  response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+  const html = `<!DOCTYPE html><html lang="it"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><meta http-equiv="refresh" content="0;url=/enter/transition"/><title>BASECAMP</title></head><body style="background:#000;color:rgba(255,255,255,0.6);display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;font-family:-apple-system,sans-serif"><p>Entro...</p></body></html>`;
+
+  const response = new NextResponse(html, {
+    status: 200,
+    headers: {
+      'Content-Type': 'text/html',
+      'Cache-Control': 'no-store, no-cache, must-revalidate',
+    },
+  });
 
   const ironSession = await getIronSession<{ user?: BasecampSession }>(
     request,

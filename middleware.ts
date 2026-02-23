@@ -43,7 +43,12 @@ export function middleware(request: NextRequest) {
     }
   }
 
-  return NextResponse.next();
+  const response = NextResponse.next();
+  // Evita cache su home e enter (sessione dipende dal cookie)
+  if (pathname === '/home' || pathname.startsWith('/enter')) {
+    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+  }
+  return response;
 }
 
 export const config = {
