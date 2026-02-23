@@ -1,5 +1,5 @@
 /**
- * Root layout: metadata PWA, viewport mobile, globals.css.
+ * Root layout: metadata, viewport mobile, globals.css.
  * Font: Geist (Vercel) — stile Datapizza, pulito e tech.
  */
 import type { Metadata, Viewport } from 'next';
@@ -10,12 +10,6 @@ import './globals.css';
 export const metadata: Metadata = {
   title: 'BASECAMP',
   description: 'Private crew space',
-  manifest: '/manifest.json',
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: 'black-translucent',
-    title: 'BASECAMP',
-  },
 };
 
 export const viewport: Viewport = {

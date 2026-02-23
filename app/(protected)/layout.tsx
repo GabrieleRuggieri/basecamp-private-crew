@@ -3,6 +3,8 @@
  * Redirect a / se non autenticato.
  */
 import { redirect } from 'next/navigation';
+
+export const dynamic = 'force-dynamic';
 import { getSession } from '@/lib/actions/auth';
 import { BottomTabBar } from '@/components/BottomTabBar';
 import { PageTransition } from '@/components/PageTransition';

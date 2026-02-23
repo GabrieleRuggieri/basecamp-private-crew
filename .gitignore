@@ -28,9 +28,3 @@ yarn-error.log*
 # OS
 .DS_Store
 Thumbs.db
-
-# PWA
-**/public/workbox-*.js
-**/public/sw.js
-**/public/worker-*.js
-**/public/fallback-*.js

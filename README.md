@@ -9,7 +9,6 @@ Private crew space — mobile-first, NFC-only access.
 - Tailwind CSS + design system Apple-like Dark
 - iron-session (cookie auth)
 - Recharts (grafici)
-- next-pwa (PWA + offline)
 
 ## Setup
 

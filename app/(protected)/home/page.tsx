@@ -2,6 +2,8 @@
  * Home: hero welcome, Feed per sezioni (Thoughts, Training, Travels, Watchlist, Moments) con 2 item per riga.
  */
 import { getSession } from '@/lib/actions/auth';
+
+export const dynamic = 'force-dynamic';
 import { getUnifiedFeed } from '@/lib/actions/feed';
 import { MemberAvatar } from '@/components/MemberAvatar';
 import { FeedItemComponent } from '@/components/FeedItem';

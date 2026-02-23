@@ -2,7 +2,6 @@
 
 /**
  * Pagina transizione: animazione tunnel NFC che si allarga e porta alla home.
- * Usa window.location per forzare full page load → sessione fresca dal server.
  */
 import { useEffect } from 'react';
 import { NfcIcon } from '@/components/NfcIcon';
