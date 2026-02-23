@@ -25,7 +25,8 @@ export async function GET(
   }
 
   const name = sessionData.name ?? '?';
-  const html = `<!DOCTYPE html><html lang="it"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><meta http-equiv="refresh" content="3;url=/enter/transition"/><title>BASECAMP</title></head><body style="background:#000;color:rgba(255,255,255,0.6);display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;font-family:-apple-system,sans-serif"><p>Entro come ${name}...</p></body></html>`;
+  const tokenPreview = token.slice(0, 12) + '...';
+  const html = `<!DOCTYPE html><html lang="it"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><meta http-equiv="refresh" content="5;url=/enter/transition"/><title>BASECAMP</title></head><body style="background:#000;color:rgba(255,255,255,0.6);display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;margin:0;font-family:-apple-system,sans-serif;gap:8px"><p>Entro come ${name}...</p><p style="font-size:12px;opacity:0.7">token: ${tokenPreview}</p></body></html>`;
 
   const response = new NextResponse(html, {
     status: 200,
