@@ -10,7 +10,8 @@ import { NfcIcon } from '@/components/NfcIcon';
 export default function EnterTransitionPage() {
   useEffect(() => {
     const t = setTimeout(() => {
-      window.location.replace('/home');
+      // Cache-busting: evita che il Service Worker restituisca /home in cache
+      window.location.replace(`/home?t=${Date.now()}`);
     }, 1200);
     return () => clearTimeout(t);
   }, []);
