@@ -60,12 +60,14 @@ export function FeedItemComponent({
             )}
           </div>
         )}
-        <div className={`flex ${compact ? 'gap-2' : 'gap-4'} flex-1 min-w-0`}>
-          <MemberAvatar
-            emoji={isAnonymous ? '?' : author?.emoji ?? '👤'}
-            name={isAnonymous ? 'Anonimo' : author?.name ?? 'Unknown'}
-            size="sm"
-          />
+        <div className={`flex items-center ${compact ? 'gap-2' : 'gap-4'} flex-1 min-w-0`}>
+          <div className="shrink-0">
+            <MemberAvatar
+              emoji={isAnonymous ? '?' : author?.emoji ?? '👤'}
+              name={isAnonymous ? 'Anonimo' : author?.name ?? 'Unknown'}
+              size="sm"
+            />
+          </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-footnote font-medium text-text-primary">
