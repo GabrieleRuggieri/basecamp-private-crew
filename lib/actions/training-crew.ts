@@ -39,32 +39,41 @@ export async function getCrewMembers(type: TrainingType = 'gym'): Promise<CrewMe
 
   if (!members?.length) return [];
 
-  const result = await Promise.all(
-    members.map(async (m) => {
-      const [prRes, sessionsRes] = await Promise.all([
-        supabase
-          .from('gym_prs')
-          .select('*', { count: 'exact', head: true })
-          .eq('member_id', m.id)
-          .eq('type', type),
-        supabase
-          .from('gym_sessions')
-          .select('*', { count: 'exact', head: true })
-          .eq('member_id', m.id)
-          .eq('type', type)
-          .not('ended_at', 'is', null),
-      ]);
+  const memberIds = members.map((m) => m.id);
 
-      return {
-        ...m,
-        streak: 0,
-        pr_count: prRes.count ?? 0,
-        sessions_count: sessionsRes.count ?? 0,
-      };
-    })
-  );
+  const [prRes, sessionsRes] = await Promise.all([
+    supabase
+      .from('gym_prs')
+      .select('member_id')
+      .in('member_id', memberIds)
+      .eq('type', type),
+    supabase
+      .from('gym_sessions')
+      .select('member_id')
+      .in('member_id', memberIds)
+      .eq('type', type)
+      .not('ended_at', 'is', null),
+  ]);
 
-  return result;
+  const prCountByMember = new Map<string, number>();
+  const sessionsCountByMember = new Map<string, number>();
+  for (const id of memberIds) {
+    prCountByMember.set(id, 0);
+    sessionsCountByMember.set(id, 0);
+  }
+  for (const row of prRes.data ?? []) {
+    prCountByMember.set(row.member_id, (prCountByMember.get(row.member_id) ?? 0) + 1);
+  }
+  for (const row of sessionsRes.data ?? []) {
+    sessionsCountByMember.set(row.member_id, (sessionsCountByMember.get(row.member_id) ?? 0) + 1);
+  }
+
+  return members.map((m) => ({
+    ...m,
+    streak: 0,
+    pr_count: prCountByMember.get(m.id) ?? 0,
+    sessions_count: sessionsCountByMember.get(m.id) ?? 0,
+  }));
 }
 
 export async function getCrewMembersWithSessions(
@@ -85,27 +94,35 @@ export async function getCrewMembersWithSessions(
         .order('ended_at', { ascending: false })
         .limit(maxSessionsPerMember);
 
-      const sessionsWithSets: CrewSessionWithSets[] = [];
-      for (const s of sessions ?? []) {
-        const { data: sets } = await supabase
+      const sessionIds = (sessions ?? []).map((s) => s.id);
+      let setsBySession = new Map<string, { exercise_name: string; weight_kg: number | null; reps: number | null }[]>();
+
+      if (sessionIds.length > 0) {
+        const { data: allSets } = await supabase
           .from('gym_sets')
-          .select('exercise_name, weight_kg, reps')
-          .eq('session_id', s.id)
+          .select('session_id, exercise_name, weight_kg, reps, set_number')
+          .in('session_id', sessionIds)
           .order('set_number');
 
-        sessionsWithSets.push({
-          id: s.id,
-          started_at: s.started_at,
-          ended_at: s.ended_at,
-          duration_minutes: s.duration_minutes,
-          mood: s.mood,
-          sets: (sets ?? []).map((x) => ({
+        for (const x of allSets ?? []) {
+          const list = setsBySession.get(x.session_id) ?? [];
+          list.push({
             exercise_name: x.exercise_name,
             weight_kg: x.weight_kg,
             reps: x.reps,
-          })),
-        });
+          });
+          setsBySession.set(x.session_id, list);
+        }
       }
+
+      const sessionsWithSets: CrewSessionWithSets[] = (sessions ?? []).map((s) => ({
+        id: s.id,
+        started_at: s.started_at,
+        ended_at: s.ended_at,
+        duration_minutes: s.duration_minutes,
+        mood: s.mood,
+        sets: setsBySession.get(s.id) ?? [],
+      }));
 
       return {
         ...m,

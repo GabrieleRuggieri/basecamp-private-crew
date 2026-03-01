@@ -23,31 +23,33 @@ export async function getCrewProgress(type: TrainingType): Promise<CrewProgressM
   const crew = await getCrewMembers(type);
   if (crew.length === 0) return [];
 
-  const result = await Promise.all(
-    crew.map(async (m) => {
-      const { data: prs } = await supabase
-        .from('gym_prs')
-        .select('exercise_name, weight_kg, reps')
-        .eq('member_id', m.id)
-        .eq('type', type)
-        .order('achieved_at', { ascending: false });
+  const memberIds = crew.map((m) => m.id);
+  const { data: allPrs } = await supabase
+    .from('gym_prs')
+    .select('member_id, exercise_name, weight_kg, reps, achieved_at')
+    .in('member_id', memberIds)
+    .eq('type', type)
+    .order('achieved_at', { ascending: false });
 
-      return {
-        id: m.id,
-        name: m.name,
-        emoji: m.emoji,
-        pr_count: m.pr_count,
-        sessions_count: m.sessions_count,
-        prs: (prs ?? []).map((r) => ({
-          exercise: r.exercise_name,
-          weight_kg: r.weight_kg,
-          reps: r.reps,
-        })),
-      };
-    })
-  );
+  const prsByMember = new Map<string, { exercise: string; weight_kg: number | null; reps: number | null }[]>();
+  for (const r of allPrs ?? []) {
+    const list = prsByMember.get(r.member_id) ?? [];
+    list.push({
+      exercise: r.exercise_name,
+      weight_kg: r.weight_kg,
+      reps: r.reps,
+    });
+    prsByMember.set(r.member_id, list);
+  }
 
-  return result;
+  return crew.map((m) => ({
+    id: m.id,
+    name: m.name,
+    emoji: m.emoji,
+    pr_count: m.pr_count,
+    sessions_count: m.sessions_count,
+    prs: prsByMember.get(m.id) ?? [],
+  }));
 }
 
 export async function getGymPrs(memberId: string, type: TrainingType = 'gym') {
@@ -76,17 +78,25 @@ export async function getGymHistory(memberId: string, type: TrainingType = 'gym'
 
   if (!sessions?.length) return { volumeByDate: [], sessions: [] };
 
-  const volumeByDate: Record<string, number> = {};
+  const sessionIds = sessions.map((s) => s.id);
+  const { data: allSets } = await supabase
+    .from('gym_sets')
+    .select('session_id, weight_kg, reps')
+    .in('session_id', sessionIds);
 
+  const setsBySession = new Map<string, { weight_kg: number | null; reps: number | null }[]>();
+  for (const x of allSets ?? []) {
+    const list = setsBySession.get(x.session_id) ?? [];
+    list.push({ weight_kg: x.weight_kg, reps: x.reps });
+    setsBySession.set(x.session_id, list);
+  }
+
+  const volumeByDate: Record<string, number> = {};
   for (const s of sessions) {
     const date = s.started_at.slice(0, 10);
-    const { data: sets } = await supabase
-      .from('gym_sets')
-      .select('weight_kg, reps')
-      .eq('session_id', s.id);
-
+    const sets = setsBySession.get(s.id) ?? [];
     let volume = 0;
-    for (const set of sets ?? []) {
+    for (const set of sets) {
       volume += (set.weight_kg ?? 0) * (set.reps ?? 0);
     }
     volumeByDate[date] = (volumeByDate[date] ?? 0) + volume;
