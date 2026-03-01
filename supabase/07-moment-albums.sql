@@ -12,5 +12,8 @@ create table if not exists moment_albums (
 -- Colonna album_id su moments (nullable: foto singole restano senza album)
 alter table moments add column if not exists album_id uuid references moment_albums(id) on delete cascade;
 
+-- Colonna position per ordine foto nell'album (0 = prima)
+alter table moments add column if not exists position int;
+
 -- Indice per query per album
 create index if not exists idx_moments_album_id on moments(album_id);

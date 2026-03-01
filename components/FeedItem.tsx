@@ -34,6 +34,8 @@ export function FeedItemComponent({
   const trainingMeta = TRAINING_LABELS[trainingType] ?? TRAINING_LABELS.gym;
   const TrainingIcon = trainingMeta.icon;
   const imageUrl = (item.payload as { imageUrl?: string })?.imageUrl;
+  const isAlbum = (item.payload as { isAlbum?: boolean })?.isAlbum;
+  const albumCount = (item.payload as { count?: number })?.count;
 
   return (
     <div
@@ -51,6 +53,11 @@ export function FeedItemComponent({
               alt={(item.content as string) || 'Moment'}
               className="w-full h-full object-cover"
             />
+            {isAlbum && albumCount != null && albumCount > 1 && (
+              <div className="absolute bottom-2 right-2 bg-black/60 text-white text-footnote px-2 py-1 rounded">
+                {albumCount} foto
+              </div>
+            )}
           </div>
         )}
         <div className={`flex ${compact ? 'gap-2' : 'gap-4'} flex-1 min-w-0`}>
@@ -153,6 +160,9 @@ export function FeedItemComponent({
             {isMoment && item.content && (
               <p className={`text-text-primary text-footnote mt-1 line-clamp-2`}>
                 {item.content}
+                {isAlbum && albumCount != null && albumCount > 1 && (
+                  <span className="text-text-tertiary ml-1">· {albumCount} foto</span>
+                )}
               </p>
             )}
           </div>

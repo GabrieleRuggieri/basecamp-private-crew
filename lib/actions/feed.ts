@@ -32,7 +32,6 @@ export async function getUnifiedFeed() {
     gymRes,
     travelsRes,
     watchlistRes,
-    momentsRes,
   ] = await Promise.all([
     supabase
       .from('thoughts')
@@ -55,11 +54,20 @@ export async function getUnifiedFeed() {
       .select('id, member_id, title, type, status, added_at')
       .order('added_at', { ascending: false })
       .limit(10),
+  ]);
+
+  const [albumsRes, singlesRes] = await Promise.all([
+    supabase
+      .from('moment_albums')
+      .select('id, member_id, title, created_at')
+      .order('created_at', { ascending: false })
+      .limit(20),
     supabase
       .from('moments')
       .select('id, member_id, storage_path, caption, taken_at')
+      .is('album_id', null)
       .order('taken_at', { ascending: false })
-      .limit(10),
+      .limit(20),
   ]);
 
   const memberIds = new Set<string>();
@@ -67,7 +75,8 @@ export async function getUnifiedFeed() {
   (gymRes.data ?? []).forEach((g) => memberIds.add(g.member_id));
   (travelsRes.data ?? []).forEach((t) => memberIds.add(t.member_id));
   (watchlistRes.data ?? []).forEach((w) => memberIds.add(w.member_id));
-  (momentsRes.data ?? []).forEach((m) => memberIds.add(m.member_id));
+  (albumsRes.data ?? []).forEach((a) => memberIds.add(a.member_id));
+  (singlesRes.data ?? []).forEach((m) => memberIds.add(m.member_id));
 
   const { data: members } = await supabase
     .from('members')
@@ -139,23 +148,72 @@ export async function getUnifiedFeed() {
     },
   }));
 
-  const momentsWithUrls = await Promise.all(
-    (momentsRes.data ?? []).map(async (m) => {
+  const albumIds = (albumsRes.data ?? []).map((a) => a.id);
+  let firstByAlbum = new Map<string, { id: string; storage_path: string }>();
+  let albumCounts = new Map<string, number>();
+
+  if (albumIds.length > 0) {
+    const { data: albumMoments } = await supabase
+      .from('moments')
+      .select('id, storage_path, album_id, position')
+      .in('album_id', albumIds);
+
+    for (const aId of albumIds) {
+      const momentsOfAlbum = (albumMoments ?? [])
+        .filter((m) => m.album_id === aId)
+        .sort((a, b) => (a.position ?? 999) - (b.position ?? 999));
+      if (momentsOfAlbum.length > 0) {
+        firstByAlbum.set(aId, {
+          id: momentsOfAlbum[0].id,
+          storage_path: momentsOfAlbum[0].storage_path,
+        });
+        albumCounts.set(aId, momentsOfAlbum.length);
+      }
+    }
+  }
+
+  const momentItems: { type: 'album' | 'single'; created_at: string; data: unknown }[] = [];
+  for (const a of albumsRes.data ?? []) {
+    momentItems.push({ type: 'album', created_at: a.created_at, data: a });
+  }
+  for (const m of singlesRes.data ?? []) {
+    momentItems.push({ type: 'single', created_at: m.taken_at, data: m });
+  }
+  momentItems.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+  const moments: FeedItem[] = [];
+  for (const item of momentItems.slice(0, 10)) {
+    if (item.type === 'album') {
+      const a = item.data as { id: string; member_id: string; title: string | null; created_at: string };
+      const first = firstByAlbum.get(a.id);
+      const imageUrl = first
+        ? (await supabase.storage.from('moments').createSignedUrl(first.storage_path, SIGNED_URL_EXPIRY)).data
+            ?.signedUrl ?? null
+        : null;
+      const count = albumCounts.get(a.id) ?? 0;
+      moments.push({
+        id: a.id,
+        type: 'moment',
+        created_at: a.created_at,
+        author: memberMap.get(a.member_id),
+        content: a.title ?? undefined,
+        payload: { imageUrl, isAlbum: true, count },
+      });
+    } else {
+      const m = item.data as { id: string; member_id: string; storage_path: string; caption: string | null; taken_at: string };
       const { data: signed } = await supabase.storage
         .from('moments')
         .createSignedUrl(m.storage_path, SIGNED_URL_EXPIRY);
-      return { ...m, imageUrl: signed?.signedUrl ?? null };
-    })
-  );
-
-  const moments: FeedItem[] = momentsWithUrls.map((m) => ({
-    id: m.id,
-    type: 'moment',
-    created_at: m.taken_at,
-    author: memberMap.get(m.member_id),
-    content: m.caption ?? undefined,
-    payload: { imageUrl: m.imageUrl },
-  }));
+      moments.push({
+        id: m.id,
+        type: 'moment',
+        created_at: m.taken_at,
+        author: memberMap.get(m.member_id),
+        content: m.caption ?? undefined,
+        payload: { imageUrl: signed?.signedUrl ?? null },
+      });
+    }
+  }
 
   return { thoughts, training, travels, watchlist, moments };
 }

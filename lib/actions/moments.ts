@@ -18,6 +18,7 @@ export type MomentWithUrl = {
   caption: string | null;
   taken_at: string;
   album_id: string | null;
+  position?: number;
   imageUrl: string | null;
 };
 
@@ -33,7 +34,7 @@ export type MomentItem = { type: 'single'; moment: MomentWithUrl } | { type: 'al
 export async function getMoments(memberId: string): Promise<MomentItem[]> {
   const { data: moments } = await supabase
     .from('moments')
-    .select('id, storage_path, caption, taken_at, album_id')
+    .select('id, storage_path, caption, taken_at, album_id, position')
     .eq('member_id', memberId)
     .order('taken_at', { ascending: false });
 
@@ -80,9 +81,7 @@ export async function getMoments(memberId: string): Promise<MomentItem[]> {
     if (m.album_id && !seenAlbums.has(m.album_id)) {
       seenAlbums.add(m.album_id);
       const info = albumsMap.get(m.album_id);
-      const albumMoments = (byAlbum.get(m.album_id) ?? []).sort(
-        (a, b) => new Date(b.taken_at).getTime() - new Date(a.taken_at).getTime()
-      );
+      const albumMoments = (byAlbum.get(m.album_id) ?? []).sort((a, b) => (a.position ?? 999) - (b.position ?? 999));
       result.push({
         type: 'album',
         album: {
@@ -164,7 +163,8 @@ export async function uploadMomentAlbum(memberId: string, formData: FormData): P
     throw albumError ?? new Error('Errore creazione album');
   }
 
-  for (const file of validFiles) {
+  for (let i = 0; i < validFiles.length; i++) {
+    const file = validFiles[i];
     const ext = file.name.split('.').pop() || 'jpg';
     const path = `${memberId}/${createId()}.${ext}`;
     const buffer = await file.arrayBuffer();
@@ -184,6 +184,7 @@ export async function uploadMomentAlbum(memberId: string, formData: FormData): P
     const { error: insertError } = await supabase.from('moments').insert({
       member_id: memberId,
       album_id: album.id,
+      position: i,
       storage_path: path,
     });
 
