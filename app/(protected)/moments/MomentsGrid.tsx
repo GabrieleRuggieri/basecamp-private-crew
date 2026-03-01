@@ -60,7 +60,10 @@ export function MomentsGrid({
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []).filter((f) => f.type.startsWith('image/'));
-    if (files.length > 0) setPreviewFiles(files);
+    if (files.length > 0) {
+      setPreviewFiles((prev) => [...prev, ...files]);
+    }
+    e.target.value = '';
   };
 
   const handleUpload = async () => {
@@ -128,6 +131,14 @@ export function MomentsGrid({
                 <img src={previewUrls[i] ?? ''} alt="" className="w-full h-full object-cover" />
               </div>
             ))}
+            <button
+              type="button"
+              onClick={() => inputRef.current?.click()}
+              className="aspect-square rounded-lg border-2 border-dashed border-[var(--separator)] text-text-tertiary flex items-center justify-center text-2xl hover:border-accent-green/50 hover:text-accent-green transition-colors"
+              aria-label="Aggiungi altra foto"
+            >
+              +
+            </button>
           </div>
           <p className="text-footnote text-text-tertiary">
             {previewFiles.length} {previewFiles.length === 1 ? 'foto' : 'foto'} —{' '}
