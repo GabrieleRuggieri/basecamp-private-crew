@@ -8,7 +8,7 @@ import type { BasecampSession } from './types';
 export const sessionOptions: SessionOptions = {
   password: process.env.BASECAMP_SESSION_SECRET!,
   cookieName: 'basecamp_session',
-  ttl: 60 * 60 * 24 * 30, // 30 days in seconds
+  ttl: 60 * 60, // 1 ora in secondi
   cookieOptions: {
     path: '/',
     secure: process.env.NODE_ENV === 'production',
