@@ -6,6 +6,7 @@
 import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { uploadMoment } from '@/lib/actions/moments';
+import { resizeImageForUpload } from '@/lib/image-utils';
 
 type Moment = {
   id: string;
@@ -68,8 +69,9 @@ export function MomentsGrid({
 
     setUploading(true);
     try {
+      const resized = await resizeImageForUpload(file);
       const formData = new FormData();
-      formData.set('file', file);
+      formData.set('file', resized);
       formData.set('caption', caption);
       await uploadMoment(memberId, formData);
       setPreview(null);
