@@ -101,10 +101,19 @@ create table watchlist (
   completed_at timestamptz
 );
 
+-- MOMENT_ALBUMS: cartelle per raggruppare più foto (es. vacanza)
+create table moment_albums (
+  id uuid primary key default gen_random_uuid(),
+  member_id uuid references members(id) on delete cascade not null,
+  title text,
+  created_at timestamptz default now()
+);
+
 -- MOMENTS
 create table moments (
   id uuid primary key default gen_random_uuid(),
   member_id uuid references members(id) on delete cascade,
+  album_id uuid references moment_albums(id) on delete cascade,
   caption text,
   storage_path text not null,
   taken_at timestamptz default now(),

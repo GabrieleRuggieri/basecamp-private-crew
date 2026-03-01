@@ -25,7 +25,10 @@ DELETE FROM travels;
 -- 7. Watchlist
 DELETE FROM watchlist;
 
--- 8. Moments
+-- 8. Moments (prima dei relativi album)
 DELETE FROM moments;
+
+-- 9. Moment albums
+DELETE FROM moment_albums;
 
 -- Poi: Dashboard → Storage → bucket "moments" → elimina tutti i file manualmente

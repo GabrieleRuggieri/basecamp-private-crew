@@ -36,7 +36,7 @@ async function run() {
   console.log('🧹 BASECAMP cleanup...\n');
 
   // Ordine: dipendenze prima
-  const tables = ['reactions', 'gym_sets', 'gym_prs', 'gym_sessions', 'thoughts', 'travels', 'watchlist', 'moments'];
+  const tables = ['reactions', 'gym_sets', 'gym_prs', 'gym_sessions', 'thoughts', 'travels', 'watchlist', 'moments', 'moment_albums'];
   for (const table of tables) {
     const { error } = await supabase.from(table).delete().neq('id', '00000000-0000-0000-0000-000000000000');
     if (error) {

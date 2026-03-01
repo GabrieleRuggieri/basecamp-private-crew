@@ -1,33 +1,26 @@
 /**
- * Moments: card con caption, gruppi per mese (cartelle), upload con titolo.
+ * Moments: card con caption, album (cartelle) per raggruppare più foto.
+ * Upload singola o multipla (album).
  */
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { uploadMoment } from '@/lib/actions/moments';
+import { uploadMoment, uploadMomentAlbum, type MomentItem, type MomentWithUrl } from '@/lib/actions/moments';
 import { resizeImageForUpload } from '@/lib/image-utils';
-
-type Moment = {
-  id: string;
-  storage_path: string;
-  caption: string | null;
-  taken_at: string;
-  imageUrl: string | null;
-};
 
 const MONTHS = [
   'Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
   'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre',
 ];
 
-function groupByMonth(moments: Moment[]): { key: string; label: string; items: Moment[] }[] {
-  const groups = new Map<string, Moment[]>();
-  for (const m of moments) {
-    const d = new Date(m.taken_at);
+function groupByMonth(items: MomentItem[]): { key: string; label: string; items: MomentItem[] }[] {
+  const groups = new Map<string, MomentItem[]>();
+  for (const item of items) {
+    const d = new Date(item.type === 'album' ? item.album.created_at : item.moment.taken_at);
     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
     if (!groups.has(key)) groups.set(key, []);
-    groups.get(key)!.push(m);
+    groups.get(key)!.push(item);
   }
   return Array.from(groups.entries())
     .sort(([a], [b]) => b.localeCompare(a))
@@ -47,34 +40,49 @@ export function MomentsGrid({
   moments,
   memberId,
 }: {
-  moments: Moment[];
+  moments: MomentItem[];
   memberId: string;
 }) {
   const router = useRouter();
   const [uploading, setUploading] = useState(false);
   const [caption, setCaption] = useState('');
-  const [preview, setPreview] = useState<string | null>(null);
-  const [viewing, setViewing] = useState<Moment | null>(null);
+  const [previewFiles, setPreviewFiles] = useState<File[]>([]);
+  const [viewing, setViewing] = useState<{ moments: MomentWithUrl[]; index: number } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const [previewUrls, setPreviewUrls] = useState<string[]>([]);
+
+  useEffect(() => {
+    const urls = previewFiles.map((f) => URL.createObjectURL(f));
+    setPreviewUrls(urls);
+    return () => urls.forEach((u) => URL.revokeObjectURL(u));
+  }, [previewFiles]);
+
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !file.type.startsWith('image/')) return;
-    setPreview(URL.createObjectURL(file));
+    const files = Array.from(e.target.files ?? []).filter((f) => f.type.startsWith('image/'));
+    if (files.length > 0) setPreviewFiles(files);
   };
 
   const handleUpload = async () => {
-    const file = inputRef.current?.files?.[0];
-    if (!file || !file.type.startsWith('image/')) return;
+    const files = previewFiles;
+    if (files.length === 0) return;
 
     setUploading(true);
     try {
-      const resized = await resizeImageForUpload(file);
-      const formData = new FormData();
-      formData.set('file', resized);
-      formData.set('caption', caption);
-      await uploadMoment(memberId, formData);
-      setPreview(null);
+      if (files.length === 1) {
+        const resized = await resizeImageForUpload(files[0]);
+        const formData = new FormData();
+        formData.set('file', resized);
+        formData.set('caption', caption);
+        await uploadMoment(memberId, formData);
+      } else {
+        const resized = await Promise.all(files.map((f) => resizeImageForUpload(f)));
+        const formData = new FormData();
+        resized.forEach((f) => formData.append('files', f));
+        formData.set('title', caption);
+        await uploadMomentAlbum(memberId, formData);
+      }
+      setPreviewFiles([]);
       setCaption('');
       if (inputRef.current) inputRef.current.value = '';
       router.refresh();
@@ -86,8 +94,7 @@ export function MomentsGrid({
   };
 
   const cancelPreview = () => {
-    if (preview) URL.revokeObjectURL(preview);
-    setPreview(null);
+    setPreviewFiles([]);
     setCaption('');
     if (inputRef.current) inputRef.current.value = '';
   };
@@ -100,12 +107,12 @@ export function MomentsGrid({
         ref={inputRef}
         type="file"
         accept="image/*"
+        multiple
         onChange={handleFileSelect}
         className="hidden"
       />
 
-      {/* Upload: pulsante o form con preview + caption */}
-      {!preview ? (
+      {previewFiles.length === 0 ? (
         <button
           onClick={() => inputRef.current?.click()}
           className="btn w-full bg-accent-green/15 text-accent-green border border-accent-green/30 mb-6 rounded-xl"
@@ -114,13 +121,21 @@ export function MomentsGrid({
         </button>
       ) : (
         <div className="card p-4 mb-6 space-y-3">
-          <div className="aspect-video rounded-lg overflow-hidden bg-surface-elevated">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={preview} alt="" className="w-full h-full object-cover" />
+          <div className="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto">
+            {previewFiles.map((_, i) => (
+              <div key={i} className="aspect-square rounded-lg overflow-hidden bg-surface-elevated">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={previewUrls[i] ?? ''} alt="" className="w-full h-full object-cover" />
+              </div>
+            ))}
           </div>
+          <p className="text-footnote text-text-tertiary">
+            {previewFiles.length} {previewFiles.length === 1 ? 'foto' : 'foto'} —{' '}
+            {previewFiles.length === 1 ? 'singola' : 'album (cartella)'}
+          </p>
           <input
             type="text"
-            placeholder="Titolo o descrizione (opzionale)"
+            placeholder={previewFiles.length === 1 ? 'Titolo (opzionale)' : 'Titolo album, es. Vacanza Grecia'}
             value={caption}
             onChange={(e) => setCaption(e.target.value)}
             className="w-full px-4 py-3 rounded-lg bg-surface-elevated border border-[var(--card-border)] text-text-primary placeholder:text-text-tertiary text-body focus:outline-none focus:ring-2 focus:ring-accent-green/50"
@@ -143,12 +158,11 @@ export function MomentsGrid({
         </div>
       )}
 
-      {/* Griglia per mese (cartelle) */}
       {groups.length === 0 ? (
         <div className="py-16 text-center">
           <span className="text-4xl opacity-40">📷</span>
           <p className="text-text-tertiary mt-3 text-body">Nessun momento</p>
-          <p className="text-text-tertiary text-footnote mt-1">Aggiungi la prima foto</p>
+          <p className="text-text-tertiary text-footnote mt-1">Aggiungi la prima foto o un album</p>
         </div>
       ) : (
         <div className="space-y-8">
@@ -158,52 +172,163 @@ export function MomentsGrid({
                 {label}
               </h2>
               <div className="grid grid-cols-2 gap-4">
-                {items.map((m) => (
-                  <MomentCard key={m.id} moment={m} onClick={() => setViewing(m)} />
-                ))}
+                {items.map((item) =>
+                  item.type === 'album' ? (
+                    <AlbumCard
+                      key={item.album.id}
+                      album={item.album}
+                      onPhotoClick={(index) => setViewing({ moments: item.album.moments, index })}
+                    />
+                  ) : (
+                    <MomentCard
+                      key={item.moment.id}
+                      moment={item.moment}
+                      onClick={() => setViewing({ moments: [item.moment], index: 0 })}
+                    />
+                  )
+                )}
               </div>
             </section>
           ))}
         </div>
       )}
 
-      {/* Lightbox — visualizzazione foto a schermo intero */}
       {viewing && (
-        <div
-          className="fixed inset-0 z-[200] bg-black flex flex-col"
-          onClick={() => setViewing(null)}
-        >
-          <button
-            onClick={() => setViewing(null)}
-            className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white text-xl"
-            aria-label="Chiudi"
-          >
-            ×
-          </button>
-          <div className="flex-1 flex items-center justify-center p-4 min-h-0" onClick={(e) => e.stopPropagation()}>
-            {viewing.imageUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={viewing.imageUrl}
-                alt={viewing.caption || ''}
-                className="max-w-full max-h-full object-contain"
-                onClick={(e) => e.stopPropagation()}
-              />
-            ) : (
-              <span className="text-text-tertiary">Immagine non disponibile</span>
-            )}
-          </div>
-          <div className="p-4 safe-area-bottom bg-black/80 text-white" onClick={(e) => e.stopPropagation()}>
-            {viewing.caption && <p className="text-body">{viewing.caption}</p>}
-            <p className="text-footnote text-text-tertiary mt-1">{formatDate(viewing.taken_at)}</p>
-          </div>
-        </div>
+        <Lightbox
+          moments={viewing.moments}
+          index={viewing.index}
+          onClose={() => setViewing(null)}
+          onIndexChange={(i) => setViewing((v) => (v ? { ...v, index: i } : null))}
+        />
       )}
     </div>
   );
 }
 
-function MomentCard({ moment, onClick }: { moment: Moment; onClick: () => void }) {
+function AlbumCard({
+  album,
+  onPhotoClick,
+}: {
+  album: { id: string; title: string | null; created_at: string; moments: MomentWithUrl[] };
+  onPhotoClick: (index: number) => void;
+}) {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const m = album.moments[currentIndex];
+
+  return (
+    <article className="card overflow-hidden group">
+      <div
+        className="aspect-[4/3] overflow-hidden bg-surface-elevated relative cursor-pointer"
+        onClick={() => onPhotoClick(currentIndex)}
+      >
+        <MomentImage url={m.imageUrl} />
+        {album.moments.length > 1 && (
+          <div className="absolute bottom-2 right-2 bg-black/60 text-white text-footnote px-2 py-1 rounded">
+            {currentIndex + 1}/{album.moments.length}
+          </div>
+        )}
+      </div>
+      <div className="p-3 flex items-center gap-2">
+        {album.moments.length > 1 && (
+          <div className="flex gap-1">
+            {album.moments.map((_, i) => (
+              <button
+                key={i}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setCurrentIndex(i);
+                }}
+                className={`w-2 h-2 rounded-full transition-colors ${
+                  i === currentIndex ? 'bg-accent-green' : 'bg-[var(--separator)]'
+                }`}
+                aria-label={`Foto ${i + 1}`}
+              />
+            ))}
+          </div>
+        )}
+        <div className="flex-1 min-w-0">
+          <p className="text-body text-text-primary line-clamp-1">
+            {album.title || `${album.moments.length} foto`}
+          </p>
+          <p className="text-footnote text-text-tertiary">{formatDate(album.created_at)}</p>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function Lightbox({
+  moments,
+  index,
+  onClose,
+  onIndexChange,
+}: {
+  moments: MomentWithUrl[];
+  index: number;
+  onClose: () => void;
+  onIndexChange: (i: number) => void;
+}) {
+  const m = moments[index];
+  const hasMultiple = moments.length > 1;
+
+  return (
+    <div className="fixed inset-0 z-[200] bg-black flex flex-col" onClick={onClose}>
+      <button
+        onClick={onClose}
+        className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white text-xl"
+        aria-label="Chiudi"
+      >
+        ×
+      </button>
+      <div className="flex-1 flex items-center justify-center p-4 min-h-0" onClick={(e) => e.stopPropagation()}>
+        {m.imageUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={m.imageUrl}
+            alt={m.caption || ''}
+            className="max-w-full max-h-full object-contain"
+            onClick={(e) => e.stopPropagation()}
+          />
+        ) : (
+          <span className="text-text-tertiary">Immagine non disponibile</span>
+        )}
+        {hasMultiple && (
+          <>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onIndexChange((index - 1 + moments.length) % moments.length);
+              }}
+              className="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white text-xl"
+              aria-label="Precedente"
+            >
+              ‹
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onIndexChange((index + 1) % moments.length);
+              }}
+              className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white text-xl"
+              aria-label="Successiva"
+            >
+              ›
+            </button>
+          </>
+        )}
+      </div>
+      <div className="p-4 safe-area-bottom bg-black/80 text-white" onClick={(e) => e.stopPropagation()}>
+        {m.caption && <p className="text-body">{m.caption}</p>}
+        <p className="text-footnote text-text-tertiary mt-1">
+          {hasMultiple ? `${index + 1} / ${moments.length} · ` : ''}
+          {formatDate(m.taken_at)}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function MomentCard({ moment, onClick }: { moment: MomentWithUrl; onClick: () => void }) {
   return (
     <article
       className="card overflow-hidden group cursor-pointer active:scale-[0.98] transition-transform"
