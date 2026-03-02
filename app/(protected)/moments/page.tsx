@@ -9,7 +9,7 @@ export default async function MomentsPage() {
   const session = await getSession();
   if (!session) return null;
 
-  const moments = await getMoments(session.memberId);
+  const moments = await getMoments();
 
   return (
     <main className="min-h-dvh">

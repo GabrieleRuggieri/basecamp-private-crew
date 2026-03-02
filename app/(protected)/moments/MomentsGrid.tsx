@@ -362,11 +362,12 @@ function AlbumCard({
   onPhotoClick,
   onAddPhotos,
 }: {
-  album: { id: string; title: string | null; created_at: string; moments: MomentWithUrl[] };
+  album: { id: string; member_id: string; title: string | null; created_at: string; moments: MomentWithUrl[] };
   memberId: string;
   onPhotoClick: (index: number) => void;
   onAddPhotos: () => void;
 }) {
+  const isOwner = album.member_id === memberId;
   const [currentIndex, setCurrentIndex] = useState(0);
   const m = album.moments[currentIndex];
 
@@ -407,18 +408,20 @@ function AlbumCard({
           </p>
           <p className="text-footnote text-text-tertiary">{formatDate(album.created_at)}</p>
         </div>
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            onAddPhotos();
-          }}
-          className="shrink-0 w-9 h-9 rounded-full bg-accent-green/15 text-accent-green flex items-center justify-center text-lg hover:bg-accent-green/25 transition-colors"
-          aria-label="Aggiungi foto"
-          title="Aggiungi foto"
-        >
-          +
-        </button>
+        {isOwner && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onAddPhotos();
+            }}
+            className="shrink-0 w-9 h-9 rounded-full bg-accent-green/15 text-accent-green flex items-center justify-center text-lg hover:bg-accent-green/25 transition-colors"
+            aria-label="Aggiungi foto"
+            title="Aggiungi foto"
+          >
+            +
+          </button>
+        )}
       </div>
     </article>
   );

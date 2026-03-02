@@ -14,6 +14,7 @@ const SIGNED_URL_EXPIRY = 60 * 60 * 24 * 365; // 1 anno
 
 export type MomentWithUrl = {
   id: string;
+  member_id: string;
   storage_path: string;
   caption: string | null;
   taken_at: string;
@@ -24,6 +25,7 @@ export type MomentWithUrl = {
 
 export type MomentAlbum = {
   id: string;
+  member_id: string;
   title: string | null;
   created_at: string;
   moments: MomentWithUrl[];
@@ -31,11 +33,10 @@ export type MomentAlbum = {
 
 export type MomentItem = { type: 'single'; moment: MomentWithUrl } | { type: 'album'; album: MomentAlbum };
 
-export async function getMoments(memberId: string): Promise<MomentItem[]> {
+export async function getMoments(): Promise<MomentItem[]> {
   const { data: moments } = await supabase
     .from('moments')
-    .select('id, storage_path, caption, taken_at, album_id, position')
-    .eq('member_id', memberId)
+    .select('id, member_id, storage_path, caption, taken_at, album_id, position')
     .order('taken_at', { ascending: false });
 
   if (!moments?.length) return [];
@@ -50,14 +51,14 @@ export async function getMoments(memberId: string): Promise<MomentItem[]> {
   );
 
   const albumIds = [...new Set(withUrls.map((m) => m.album_id).filter(Boolean))] as string[];
-  const albumsMap = new Map<string, { title: string | null; created_at: string }>();
+  const albumsMap = new Map<string, { member_id: string; title: string | null; created_at: string }>();
   if (albumIds.length > 0) {
     const { data: albums } = await supabase
       .from('moment_albums')
-      .select('id, title, created_at')
+      .select('id, member_id, title, created_at')
       .in('id', albumIds);
     for (const a of albums ?? []) {
-      albumsMap.set(a.id, { title: a.title, created_at: a.created_at });
+      albumsMap.set(a.id, { member_id: a.member_id, title: a.title, created_at: a.created_at });
     }
   }
 
@@ -86,6 +87,7 @@ export async function getMoments(memberId: string): Promise<MomentItem[]> {
         type: 'album',
         album: {
           id: m.album_id,
+          member_id: info?.member_id ?? m.member_id,
           title: info?.title ?? null,
           created_at: info?.created_at ?? m.taken_at,
           moments: albumMoments,
@@ -207,6 +209,15 @@ export async function addPhotosToAlbum(
   const files = formData.getAll('files') as File[];
   const validFiles = files.filter((f) => f && f.type?.startsWith('image/'));
   if (validFiles.length === 0) throw new Error('Nessuna immagine valida');
+
+  const { data: album } = await supabase
+    .from('moment_albums')
+    .select('member_id')
+    .eq('id', albumId)
+    .single();
+  if (!album || album.member_id !== memberId) {
+    throw new Error('Non puoi aggiungere foto a questo album');
+  }
 
   const { data: existing } = await supabase
     .from('moments')
