@@ -377,19 +377,6 @@ function AlbumCard({
         onClick={() => onPhotoClick(0)}
       >
         <MomentImage url={firstPhoto.imageUrl} />
-        {album.moments.length > 1 && (
-          <div className="absolute bottom-2 right-2 bg-black/60 text-white text-footnote px-2 py-1 rounded">
-            {album.moments.length} foto
-          </div>
-        )}
-      </div>
-      <div className="p-3 flex items-center gap-2">
-        <div className="flex-1 min-w-0">
-          <p className="text-body text-text-primary line-clamp-1">
-            {album.title || `${album.moments.length} foto`}
-          </p>
-          <p className="text-footnote text-text-tertiary">{formatDate(album.created_at)}</p>
-        </div>
         {isOwner && (
           <button
             type="button"
@@ -397,13 +384,24 @@ function AlbumCard({
               e.stopPropagation();
               onAddPhotos();
             }}
-            className="shrink-0 min-w-[44px] min-h-[44px] w-11 h-11 rounded-full bg-accent-green/15 text-accent-green flex items-center justify-center text-xl active:bg-accent-green/25 transition-colors touch-manipulation"
+            className="absolute top-2 right-2 z-10 min-w-[44px] min-h-[44px] w-11 h-11 rounded-full bg-black/60 text-white flex items-center justify-center text-xl active:bg-black/80 transition-colors touch-manipulation"
             aria-label="Aggiungi foto"
             title="Aggiungi foto"
           >
             +
           </button>
         )}
+        {album.moments.length > 1 && (
+          <div className="absolute bottom-2 right-2 bg-black/60 text-white text-footnote px-2 py-1 rounded">
+            {album.moments.length} foto
+          </div>
+        )}
+      </div>
+      <div className="p-3">
+        <p className="text-body text-text-primary line-clamp-1">
+          {album.title || `${album.moments.length} foto`}
+        </p>
+        <p className="text-footnote text-text-tertiary mt-0.5">{formatDate(album.created_at)}</p>
       </div>
     </article>
   );
