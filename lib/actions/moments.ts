@@ -143,6 +143,7 @@ export async function uploadMoment(memberId: string, formData: FormData) {
     throw insertError;
   }
   revalidatePath('/moments');
+  revalidatePath('/home');
 }
 
 export async function uploadMomentAlbum(memberId: string, formData: FormData): Promise<void> {
@@ -195,4 +196,58 @@ export async function uploadMomentAlbum(memberId: string, formData: FormData): P
   }
 
   revalidatePath('/moments');
+  revalidatePath('/home');
+}
+
+export async function addPhotosToAlbum(
+  memberId: string,
+  albumId: string,
+  formData: FormData
+): Promise<void> {
+  const files = formData.getAll('files') as File[];
+  const validFiles = files.filter((f) => f && f.type?.startsWith('image/'));
+  if (validFiles.length === 0) throw new Error('Nessuna immagine valida');
+
+  const { data: existing } = await supabase
+    .from('moments')
+    .select('position')
+    .eq('album_id', albumId)
+    .order('position', { ascending: false })
+    .limit(1);
+
+  const startPosition = (existing?.[0]?.position ?? -1) + 1;
+
+  for (let i = 0; i < validFiles.length; i++) {
+    const file = validFiles[i];
+    const ext = file.name.split('.').pop() || 'jpg';
+    const path = `${memberId}/${createId()}.${ext}`;
+    const buffer = await file.arrayBuffer();
+
+    const { error: uploadError } = await supabase.storage
+      .from('moments')
+      .upload(path, buffer, {
+        contentType: file.type,
+        upsert: false,
+      });
+
+    if (uploadError) {
+      console.error('addPhotosToAlbum', uploadError);
+      throw uploadError;
+    }
+
+    const { error: insertError } = await supabase.from('moments').insert({
+      member_id: memberId,
+      album_id: albumId,
+      position: startPosition + i,
+      storage_path: path,
+    });
+
+    if (insertError) {
+      console.error('addPhotosToAlbum insert', insertError);
+      throw insertError;
+    }
+  }
+
+  revalidatePath('/moments');
+  revalidatePath('/home');
 }

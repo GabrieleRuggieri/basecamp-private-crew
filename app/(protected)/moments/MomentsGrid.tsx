@@ -6,8 +6,9 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { uploadMoment, uploadMomentAlbum, type MomentItem, type MomentWithUrl } from '@/lib/actions/moments';
+import { uploadMoment, uploadMomentAlbum, addPhotosToAlbum, type MomentItem, type MomentWithUrl } from '@/lib/actions/moments';
 import { resizeImageForUpload } from '@/lib/image-utils';
+import { BottomSheet } from '@/components/BottomSheet';
 
 const MONTHS = [
   'Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
@@ -48,7 +49,10 @@ export function MomentsGrid({
   const [caption, setCaption] = useState('');
   const [previewFiles, setPreviewFiles] = useState<File[]>([]);
   const [viewing, setViewing] = useState<{ moments: MomentWithUrl[]; index: number } | null>(null);
+  const [addToAlbum, setAddToAlbum] = useState<{ albumId: string; title: string } | null>(null);
+  const [addToAlbumFiles, setAddToAlbumFiles] = useState<File[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
+  const addToAlbumInputRef = useRef<HTMLInputElement>(null);
 
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
 
@@ -188,7 +192,9 @@ export function MomentsGrid({
                     <AlbumCard
                       key={item.album.id}
                       album={item.album}
+                      memberId={memberId}
                       onPhotoClick={(index) => setViewing({ moments: item.album.moments, index })}
+                      onAddPhotos={() => setAddToAlbum({ albumId: item.album.id, title: item.album.title ?? '' })}
                     />
                   ) : (
                     <MomentCard
@@ -204,6 +210,33 @@ export function MomentsGrid({
         </div>
       )}
 
+      <BottomSheet
+        isOpen={!!addToAlbum}
+        onClose={() => {
+          setAddToAlbum(null);
+          setAddToAlbumFiles([]);
+          addToAlbumInputRef.current && (addToAlbumInputRef.current.value = '');
+        }}
+        title={addToAlbum ? `Aggiungi a "${addToAlbum.title || 'Album'}"` : undefined}
+      >
+        {addToAlbum && (
+          <AddToAlbumForm
+            memberId={memberId}
+            albumId={addToAlbum.albumId}
+            files={addToAlbumFiles}
+            setFiles={setAddToAlbumFiles}
+            inputRef={addToAlbumInputRef}
+            onSuccess={() => {
+              setAddToAlbum(null);
+              setAddToAlbumFiles([]);
+              addToAlbumInputRef.current && (addToAlbumInputRef.current.value = '');
+              router.refresh();
+            }}
+            onCancel={() => setAddToAlbum(null)}
+          />
+        )}
+      </BottomSheet>
+
       {viewing && (
         <Lightbox
           moments={viewing.moments}
@@ -216,12 +249,123 @@ export function MomentsGrid({
   );
 }
 
+function AddToAlbumForm({
+  memberId,
+  albumId,
+  files,
+  setFiles,
+  inputRef,
+  onSuccess,
+  onCancel,
+}: {
+  memberId: string;
+  albumId: string;
+  files: File[];
+  setFiles: (f: File[]) => void;
+  inputRef: React.RefObject<HTMLInputElement | null>;
+  onSuccess: () => void;
+  onCancel: () => void;
+}) {
+  const [uploading, setUploading] = useState(false);
+  const [previewUrls, setPreviewUrls] = useState<string[]>([]);
+
+  useEffect(() => {
+    const urls = files.map((f) => URL.createObjectURL(f));
+    setPreviewUrls(urls);
+    return () => urls.forEach((u) => URL.revokeObjectURL(u));
+  }, [files]);
+
+  const handleSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newFiles = Array.from(e.target.files ?? []).filter((f) => f.type.startsWith('image/'));
+    if (newFiles.length) setFiles([...files, ...newFiles]);
+    e.target.value = '';
+  };
+
+  const handleAdd = async () => {
+    if (files.length === 0) return;
+    setUploading(true);
+    try {
+      const resized = await Promise.all(files.map((f) => resizeImageForUpload(f)));
+      const formData = new FormData();
+      resized.forEach((f) => formData.append('files', f));
+      await addPhotosToAlbum(memberId, albumId, formData);
+      onSuccess();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <input
+        ref={inputRef as React.RefObject<HTMLInputElement>}
+        type="file"
+        accept="image/*"
+        multiple
+        onChange={handleSelect}
+        className="hidden"
+      />
+      <button
+        type="button"
+        onClick={() => inputRef.current?.click()}
+        className="w-full py-3 rounded-lg border-2 border-dashed border-accent-green/50 text-accent-green flex items-center justify-center gap-2"
+      >
+        + Scegli foto
+      </button>
+      {files.length > 0 && (
+        <>
+          <div className="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto">
+            {files.map((_, i) => (
+              <div key={i} className="aspect-square rounded-lg overflow-hidden bg-surface-elevated relative">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={previewUrls[i]} alt="" className="w-full h-full object-cover" />
+                <button
+                  type="button"
+                  onClick={() => setFiles(files.filter((_, j) => j !== i))}
+                  className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/60 text-white text-sm flex items-center justify-center"
+                  aria-label="Rimuovi"
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+          <p className="text-footnote text-text-tertiary">{files.length} foto selezionate</p>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={onCancel}
+              className="flex-1 py-3 rounded-lg border border-[var(--separator)] text-text-secondary"
+            >
+              Annulla
+            </button>
+            <button
+              type="button"
+              onClick={handleAdd}
+              disabled={uploading}
+              className="flex-1 py-3 rounded-lg bg-accent-green text-white font-medium disabled:opacity-60"
+            >
+              {uploading ? 'Caricamento...' : 'Aggiungi'}
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 function AlbumCard({
   album,
+  memberId,
   onPhotoClick,
+  onAddPhotos,
 }: {
   album: { id: string; title: string | null; created_at: string; moments: MomentWithUrl[] };
+  memberId: string;
   onPhotoClick: (index: number) => void;
+  onAddPhotos: () => void;
 }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const m = album.moments[currentIndex];
@@ -263,6 +407,18 @@ function AlbumCard({
           </p>
           <p className="text-footnote text-text-tertiary">{formatDate(album.created_at)}</p>
         </div>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onAddPhotos();
+          }}
+          className="shrink-0 w-9 h-9 rounded-full bg-accent-green/15 text-accent-green flex items-center justify-center text-lg hover:bg-accent-green/25 transition-colors"
+          aria-label="Aggiungi foto"
+          title="Aggiungi foto"
+        >
+          +
+        </button>
       </div>
     </article>
   );
