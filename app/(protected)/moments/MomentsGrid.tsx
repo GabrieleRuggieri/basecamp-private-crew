@@ -415,7 +415,7 @@ function AlbumCard({
               e.stopPropagation();
               onAddPhotos();
             }}
-            className="shrink-0 w-9 h-9 rounded-full bg-accent-green/15 text-accent-green flex items-center justify-center text-lg hover:bg-accent-green/25 transition-colors"
+            className="shrink-0 min-w-[44px] min-h-[44px] w-11 h-11 rounded-full bg-accent-green/15 text-accent-green flex items-center justify-center text-xl active:bg-accent-green/25 transition-colors touch-manipulation"
             aria-label="Aggiungi foto"
             title="Aggiungi foto"
           >
