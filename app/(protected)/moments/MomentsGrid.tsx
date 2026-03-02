@@ -368,40 +368,22 @@ function AlbumCard({
   onAddPhotos: () => void;
 }) {
   const isOwner = album.member_id === memberId;
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const m = album.moments[currentIndex];
+  const firstPhoto = album.moments[0];
 
   return (
     <article className="card overflow-hidden group">
       <div
         className="aspect-[4/3] overflow-hidden bg-surface-elevated relative cursor-pointer"
-        onClick={() => onPhotoClick(currentIndex)}
+        onClick={() => onPhotoClick(0)}
       >
-        <MomentImage url={m.imageUrl} />
+        <MomentImage url={firstPhoto.imageUrl} />
         {album.moments.length > 1 && (
           <div className="absolute bottom-2 right-2 bg-black/60 text-white text-footnote px-2 py-1 rounded">
-            {currentIndex + 1}/{album.moments.length}
+            {album.moments.length} foto
           </div>
         )}
       </div>
       <div className="p-3 flex items-center gap-2">
-        {album.moments.length > 1 && (
-          <div className="flex gap-1">
-            {album.moments.map((_, i) => (
-              <button
-                key={i}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setCurrentIndex(i);
-                }}
-                className={`w-2 h-2 rounded-full transition-colors ${
-                  i === currentIndex ? 'bg-accent-green' : 'bg-[var(--separator)]'
-                }`}
-                aria-label={`Foto ${i + 1}`}
-              />
-            ))}
-          </div>
-        )}
         <div className="flex-1 min-w-0">
           <p className="text-body text-text-primary line-clamp-1">
             {album.title || `${album.moments.length} foto`}
