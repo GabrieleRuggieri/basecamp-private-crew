@@ -84,3 +84,38 @@ export async function addThought(
   revalidatePath('/thoughts');
   revalidatePath('/home');
 }
+
+export async function updateThought(
+  thoughtId: string,
+  memberId: string,
+  content: string,
+  tags: ThoughtTag[],
+  anonymous: boolean
+) {
+  const { data: existing } = await supabase
+    .from('thoughts')
+    .select('member_id')
+    .eq('id', thoughtId)
+    .single();
+  if (!existing || existing.member_id !== memberId) return;
+
+  const { error: thoughtError } = await supabase
+    .from('thoughts')
+    .update({ content, is_anonymous: anonymous })
+    .eq('id', thoughtId);
+
+  if (thoughtError) {
+    console.error('updateThought', thoughtError);
+    return;
+  }
+
+  await supabase.from('thought_tags').delete().eq('thought_id', thoughtId);
+  if (tags.length > 0) {
+    await supabase.from('thought_tags').insert(
+      tags.map((tag) => ({ thought_id: thoughtId, tag }))
+    );
+  }
+
+  revalidatePath('/thoughts');
+  revalidatePath('/home');
+}

@@ -5,7 +5,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { addTravel } from '@/lib/actions/travels';
+import { addTravel, updateTravel } from '@/lib/actions/travels';
 import { BottomSheet } from '@/components/BottomSheet';
 
 type Travel = {
@@ -30,6 +30,7 @@ export function TravelsView({
   const router = useRouter();
   const [filter, setFilter] = useState<Filter>('visited');
   const [showAdd, setShowAdd] = useState(false);
+  const [editingTravel, setEditingTravel] = useState<Travel | null>(null);
   const [title, setTitle] = useState('');
   const [location, setLocation] = useState('');
   const [countryEmoji, setCountryEmoji] = useState('');
@@ -41,15 +42,27 @@ export function TravelsView({
 
   const handleAdd = async () => {
     if (!title.trim() || !location.trim()) return;
-    await addTravel(
-      memberId,
-      title.trim(),
-      location.trim(),
-      countryEmoji.trim() || null,
-      status,
-      year ? parseInt(year, 10) : null,
-      note.trim() || null
-    );
+    if (editingTravel) {
+      await updateTravel(editingTravel.id, memberId, {
+        title: title.trim(),
+        location: location.trim(),
+        country_emoji: countryEmoji.trim() || null,
+        status,
+        year: year ? parseInt(year, 10) : null,
+        note: note.trim() || null,
+      });
+      setEditingTravel(null);
+    } else {
+      await addTravel(
+        memberId,
+        title.trim(),
+        location.trim(),
+        countryEmoji.trim() || null,
+        status,
+        year ? parseInt(year, 10) : null,
+        note.trim() || null
+      );
+    }
     setTitle('');
     setLocation('');
     setCountryEmoji('');
@@ -58,6 +71,17 @@ export function TravelsView({
     setNote('');
     setShowAdd(false);
     router.refresh();
+  };
+
+  const openEdit = (t: Travel) => {
+    setEditingTravel(t);
+    setTitle(t.title);
+    setLocation(t.location);
+    setCountryEmoji(t.country_emoji ?? '');
+    setStatus(t.status);
+    setYear(t.year?.toString() ?? '');
+    setNote(t.note ?? '');
+    setShowAdd(true);
   };
 
   return (
@@ -99,15 +123,24 @@ export function TravelsView({
           </p>
         ) : (
           filtered.map((t) => (
-            <div key={t.id} className="card p-4 rounded-xl">
-              <p className="text-text-primary font-medium">{t.title}</p>
-              <p className="text-text-tertiary text-sm">
-                {t.country_emoji && `${t.country_emoji} `}
-                {t.location}
-              </p>
-              {t.year && (
-                <p className="text-accent-green text-xs mt-1">{t.year}</p>
-              )}
+            <div key={t.id} className="card p-4 rounded-xl flex justify-between items-start gap-2">
+              <div>
+                <p className="text-text-primary font-medium">{t.title}</p>
+                <p className="text-text-tertiary text-sm">
+                  {t.country_emoji && `${t.country_emoji} `}
+                  {t.location}
+                </p>
+                {t.year && (
+                  <p className="text-accent-green text-xs mt-1">{t.year}</p>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => openEdit(t)}
+                className="text-xs text-text-tertiary hover:text-accent-blue shrink-0"
+              >
+                Modifica
+              </button>
             </div>
           ))
         )}
@@ -115,8 +148,11 @@ export function TravelsView({
 
       <BottomSheet
         isOpen={showAdd}
-        onClose={() => setShowAdd(false)}
-        title="Aggiungi viaggio"
+        onClose={() => {
+          setShowAdd(false);
+          setEditingTravel(null);
+        }}
+        title={editingTravel ? 'Modifica viaggio' : 'Aggiungi viaggio'}
       >
         <div className="space-y-4">
           <div>
@@ -185,7 +221,7 @@ export function TravelsView({
             disabled={!title.trim() || !location.trim()}
             className="btn w-full bg-accent-blue text-white rounded-xl"
           >
-            Aggiungi
+            {editingTravel ? 'Salva' : 'Aggiungi'}
           </button>
         </div>
       </BottomSheet>

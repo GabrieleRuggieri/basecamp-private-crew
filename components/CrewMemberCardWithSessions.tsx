@@ -5,6 +5,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { MemberAvatar } from '@/components/MemberAvatar';
 import { addReaction, addComment, removeReaction } from '@/lib/actions/reactions';
 import type { ReactionSummary } from '@/lib/actions/reactions';
@@ -39,8 +40,11 @@ function SessionCard({
   reactionSummary?: ReactionSummary;
   currentMemberId: string;
 }) {
+  const router = useRouter();
   const [commentDraft, setCommentDraft] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editingComment, setEditingComment] = useState(false);
+  const [commentEditValue, setCommentEditValue] = useState('');
 
   const { emojiCounts = [], comments = [] } = reactionSummary ?? {};
   const myComment = comments.find((c) => c.memberId === currentMemberId);
@@ -142,14 +146,66 @@ function SessionCard({
           )}
         </form>
       ) : (
-        <div className="mt-2 flex items-center gap-2">
-          <span className="text-text-tertiary text-xs italic">Il tuo: {myComment.comment}</span>
-          <button
-            onClick={() => removeReaction('gym_session', session.id)}
-            className="text-xs text-text-tertiary hover:text-text-secondary"
-          >
-            Rimuovi
-          </button>
+        <div className="mt-2 flex flex-col gap-1">
+          {editingComment ? (
+            <>
+              <input
+                type="text"
+                value={commentEditValue}
+                onChange={(e) => setCommentEditValue(e.target.value)}
+                className="w-full bg-transparent border border-[var(--card-border)] rounded-lg px-2 py-1.5 text-xs text-text-primary"
+                maxLength={500}
+              />
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (!commentEditValue.trim() || isSubmitting) return;
+                    setIsSubmitting(true);
+                    await addComment('gym_session', session.id, commentEditValue.trim());
+                    setEditingComment(false);
+                    router.refresh();
+                    setIsSubmitting(false);
+                  }}
+                  disabled={!commentEditValue.trim() || isSubmitting}
+                  className="text-xs text-accent-purple font-medium"
+                >
+                  Salva
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingComment(false);
+                    setCommentEditValue(myComment.comment);
+                  }}
+                  className="text-xs text-text-tertiary"
+                >
+                  Annulla
+                </button>
+              </div>
+            </>
+          ) : (
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-text-tertiary text-xs italic">Il tuo: {myComment.comment}</span>
+              <button
+                type="button"
+                onClick={() => {
+                  setCommentEditValue(myComment.comment);
+                  setEditingComment(true);
+                }}
+                className="text-xs text-text-tertiary hover:text-accent-purple"
+              >
+                Modifica
+              </button>
+              <button
+                type="button"
+                onClick={() => removeReaction('gym_session', session.id)}
+                className="text-xs text-text-tertiary hover:text-text-secondary"
+              >
+                Rimuovi
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>

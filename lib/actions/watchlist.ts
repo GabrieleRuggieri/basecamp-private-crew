@@ -43,3 +43,27 @@ export async function updateWatchlistStatus(id: string, status: 'want' | 'doing'
   if (error) console.error('updateWatchlistStatus', error);
   else revalidatePath('/watchlist');
 }
+
+export async function updateWatchlistItem(
+  id: string,
+  memberId: string,
+  title: string,
+  type: 'movie' | 'series' | 'book' | 'podcast' | 'other'
+) {
+  const { data: existing } = await supabase
+    .from('watchlist')
+    .select('member_id')
+    .eq('id', id)
+    .single();
+  if (!existing || existing.member_id !== memberId) return;
+
+  const { error } = await supabase
+    .from('watchlist')
+    .update({ title, type })
+    .eq('id', id);
+  if (error) console.error('updateWatchlistItem', error);
+  else {
+    revalidatePath('/watchlist');
+    revalidatePath('/home');
+  }
+}

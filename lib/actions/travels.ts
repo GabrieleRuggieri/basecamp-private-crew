@@ -39,3 +39,41 @@ export async function addTravel(
   if (error) console.error('addTravel', error);
   else revalidatePath('/travels');
 }
+
+export async function updateTravel(
+  travelId: string,
+  memberId: string,
+  data: {
+    title: string;
+    location: string;
+    country_emoji: string | null;
+    status: 'visited' | 'wishlist';
+    year: number | null;
+    note: string | null;
+  }
+) {
+  const { data: existing } = await supabase
+    .from('travels')
+    .select('member_id')
+    .eq('id', travelId)
+    .single();
+  if (!existing || existing.member_id !== memberId) return;
+
+  const { error } = await supabase
+    .from('travels')
+    .update({
+      title: data.title,
+      location: data.location,
+      country_emoji: data.country_emoji,
+      status: data.status,
+      year: data.year,
+      note: data.note,
+    })
+    .eq('id', travelId);
+
+  if (error) console.error('updateTravel', error);
+  else {
+    revalidatePath('/travels');
+    revalidatePath('/home');
+  }
+}

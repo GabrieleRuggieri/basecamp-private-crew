@@ -6,7 +6,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { addWatchlistItem, updateWatchlistStatus } from '@/lib/actions/watchlist';
+import { addWatchlistItem, updateWatchlistStatus, updateWatchlistItem } from '@/lib/actions/watchlist';
 import { BottomSheet } from '@/components/BottomSheet';
 import { Film, BookOpen, Mic2, Tv, Package, Plus } from 'lucide-react';
 import type { WatchlistItem } from '@/lib/types';
@@ -33,6 +33,7 @@ export function WatchlistView({
   const [tab, setTab] = useState<Status>('want');
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
   const [showAdd, setShowAdd] = useState(false);
+  const [editingItem, setEditingItem] = useState<WatchlistItem | null>(null);
   const [title, setTitle] = useState('');
   const [type, setType] = useState<TypeFilter>('movie');
 
@@ -42,16 +43,24 @@ export function WatchlistView({
 
   const handleAdd = async () => {
     if (!title.trim()) return;
-    await addWatchlistItem(
-      memberId,
-      title.trim(),
-      type === 'all' ? 'movie' : (type as 'movie' | 'series' | 'book' | 'podcast' | 'other'),
-      'want'
-    );
+    const itemType = type === 'all' ? 'movie' : (type as 'movie' | 'series' | 'book' | 'podcast' | 'other');
+    if (editingItem) {
+      await updateWatchlistItem(editingItem.id, memberId, title.trim(), itemType);
+      setEditingItem(null);
+    } else {
+      await addWatchlistItem(memberId, title.trim(), itemType, 'want');
+    }
     setTitle('');
     setType('movie');
     setShowAdd(false);
     router.refresh();
+  };
+
+  const openEdit = (item: WatchlistItem) => {
+    setEditingItem(item);
+    setTitle(item.title);
+    setType((item.type ?? 'movie') as TypeFilter);
+    setShowAdd(true);
   };
 
   const tabs: { id: Status; label: string }[] = [
@@ -152,6 +161,14 @@ export function WatchlistView({
                       </span>
                     )}
                   </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => openEdit(item)}
+                      className="text-xs text-text-tertiary hover:text-accent-orange"
+                    >
+                      Modifica
+                    </button>
                   <select
                     value={item.status}
                     onChange={async (e) => {
@@ -164,6 +181,7 @@ export function WatchlistView({
                     <option value="doing">Doing</option>
                     <option value="done">Done</option>
                   </select>
+                  </div>
                 </div>
               </div>
             );
@@ -171,7 +189,14 @@ export function WatchlistView({
         )}
       </div>
 
-      <BottomSheet isOpen={showAdd} onClose={() => setShowAdd(false)} title="Aggiungi titolo">
+      <BottomSheet
+        isOpen={showAdd}
+        onClose={() => {
+          setShowAdd(false);
+          setEditingItem(null);
+        }}
+        title={editingItem ? 'Modifica titolo' : 'Aggiungi titolo'}
+      >
         <div className="space-y-4">
           <div>
             <label className="text-text-secondary text-sm block mb-2">Titolo</label>
@@ -202,7 +227,7 @@ export function WatchlistView({
             disabled={!title.trim()}
             className="btn w-full bg-accent-orange text-white rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Aggiungi
+            {editingItem ? 'Salva' : 'Aggiungi'}
           </button>
         </div>
       </BottomSheet>
