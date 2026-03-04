@@ -39,6 +39,39 @@ function calcPaceFloat(seconds: number, km: number): number {
   return seconds / 60 / km;
 }
 
+const STORAGE_KEY = 'basecamp_running_session';
+const SESSION_MAX_AGE_MS = 4 * 60 * 60 * 1000; // 4 ore
+
+function loadPersistedSession(): { sessionId: string; startedAt: number } | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const data = JSON.parse(raw) as { sessionId: string; startedAt: number };
+    if (!data.sessionId || !data.startedAt) return null;
+    if (Date.now() - data.startedAt > SESSION_MAX_AGE_MS) return null;
+    return data;
+  } catch {
+    return null;
+  }
+}
+
+function savePersistedSession(sessionId: string, startedAt: number) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ sessionId, startedAt }));
+  } catch {
+    // ignore
+  }
+}
+
+function clearPersistedSession() {
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    // ignore
+  }
+}
+
 export function RunningSessionLogger({
   backHref = '/training/running',
 }: {
@@ -47,25 +80,41 @@ export function RunningSessionLogger({
   const router = useRouter();
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [sessionError, setSessionError] = useState(false);
-  const [elapsed, setElapsed] = useState(0);
+  const [startedAt, setStartedAt] = useState<number | null>(null);
+  const [tick, setTick] = useState(0);
   const [km, setKm] = useState('');
   const [showFinishSheet, setShowFinishSheet] = useState(false);
   const [mood, setMood] = useState<string | null>(null);
   const [note, setNote] = useState('');
   const [isFinishing, setIsFinishing] = useState(false);
 
+  // Restore session from localStorage or create new one
   useEffect(() => {
+    const persisted = loadPersistedSession();
+    if (persisted) {
+      setSessionId(persisted.sessionId);
+      setStartedAt(persisted.startedAt);
+      return;
+    }
     addRunningSession().then((id) => {
-      if (id) setSessionId(id);
-      else setSessionError(true);
+      if (id) {
+        const now = Date.now();
+        setSessionId(id);
+        setStartedAt(now);
+        savePersistedSession(id, now);
+      } else {
+        setSessionError(true);
+      }
     });
   }, []);
 
+  // Timer: elapsed calcolato da startedAt, così sopravvive a background/refresh
+  const elapsed = startedAt ? Math.floor((Date.now() - startedAt) / 1000) : 0;
   useEffect(() => {
-    if (showFinishSheet) return;
-    const t = setInterval(() => setElapsed((e) => e + 1), 1000);
+    if (showFinishSheet || !startedAt) return;
+    const t = setInterval(() => setTick((n) => n + 1), 1000);
     return () => clearInterval(t);
-  }, [showFinishSheet]);
+  }, [showFinishSheet, startedAt]);
 
   const kmValue = parseFloat(km) || 0;
   const paceDisplay = calcPace(elapsed, kmValue);
@@ -73,6 +122,7 @@ export function RunningSessionLogger({
   const handleFinish = async () => {
     if (!sessionId || !mood || kmValue <= 0) return;
     setIsFinishing(true);
+    clearPersistedSession();
     const paceFloat = calcPaceFloat(elapsed, kmValue);
     const durationMinutes = Math.ceil(elapsed / 60);
     await finishRunningSession(sessionId, kmValue, paceFloat, mood, note, durationMinutes);

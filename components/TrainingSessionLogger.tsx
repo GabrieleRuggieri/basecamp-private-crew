@@ -39,6 +39,42 @@ const ACCENT_BY_TYPE: Record<TrainingType, string> = {
   running: 'accent-red',
 };
 
+const SESSION_MAX_AGE_MS = 4 * 60 * 60 * 1000; // 4 ore
+
+function getStorageKey(t: TrainingType) {
+  return `basecamp_training_session_${t}`;
+}
+
+function loadPersistedSession(type: TrainingType): { sessionId: string; startedAt: number } | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem(getStorageKey(type));
+    if (!raw) return null;
+    const data = JSON.parse(raw) as { sessionId: string; startedAt: number };
+    if (!data.sessionId || !data.startedAt) return null;
+    if (Date.now() - data.startedAt > SESSION_MAX_AGE_MS) return null;
+    return data;
+  } catch {
+    return null;
+  }
+}
+
+function savePersistedSession(type: TrainingType, sessionId: string, startedAt: number) {
+  try {
+    localStorage.setItem(getStorageKey(type), JSON.stringify({ sessionId, startedAt }));
+  } catch {
+    // ignore
+  }
+}
+
+function clearPersistedSession(type: TrainingType) {
+  try {
+    localStorage.removeItem(getStorageKey(type));
+  } catch {
+    // ignore
+  }
+}
+
 export function TrainingSessionLogger({
   type = 'gym',
   backHref = '/training/gym',
@@ -49,7 +85,8 @@ export function TrainingSessionLogger({
   const router = useRouter();
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [sessionError, setSessionError] = useState(false);
-  const [elapsed, setElapsed] = useState(0);
+  const [startedAt, setStartedAt] = useState<number | null>(null);
+  const [tick, setTick] = useState(0);
   const [sets, setSets] = useState<Set[]>([]);
   const [showFinishSheet, setShowFinishSheet] = useState(false);
   const [mood, setMood] = useState<string | null>(null);
@@ -60,20 +97,35 @@ export function TrainingSessionLogger({
 
   const accent = ACCENT_BY_TYPE[type];
 
-  // Create session on mount
+  // elapsed calcolato da startedAt, così il timer sopravvive a background/refresh
+  const elapsed = startedAt ? Math.floor((Date.now() - startedAt) / 1000) : 0;
+
+  // Restore session from localStorage or create new one
   useEffect(() => {
+    const persisted = loadPersistedSession(type);
+    if (persisted) {
+      setSessionId(persisted.sessionId);
+      setStartedAt(persisted.startedAt);
+      return;
+    }
     addGymSession(type).then((id) => {
-      if (id) setSessionId(id);
-      else setSessionError(true);
+      if (id) {
+        const now = Date.now();
+        setSessionId(id);
+        setStartedAt(now);
+        savePersistedSession(type, id, now);
+      } else {
+        setSessionError(true);
+      }
     });
   }, [type]);
 
-  // Timer: si ferma quando si apre il sheet Finish
+  // Timer: re-render ogni secondo per aggiornare elapsed
   useEffect(() => {
-    if (showFinishSheet) return;
-    const t = setInterval(() => setElapsed((e) => e + 1), 1000);
+    if (showFinishSheet || !startedAt) return;
+    const t = setInterval(() => setTick((n) => n + 1), 1000);
     return () => clearInterval(t);
-  }, [showFinishSheet]);
+  }, [showFinishSheet, startedAt]);
 
   const addSet = useCallback(() => {
     setSets((s) => [
@@ -99,6 +151,7 @@ export function TrainingSessionLogger({
   const handleFinish = async () => {
     if (!sessionId || !mood) return;
     setIsFinishing(true);
+    clearPersistedSession(type);
 
     for (let i = 0; i < sets.length; i++) {
       const set = sets[i];
