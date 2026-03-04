@@ -50,6 +50,22 @@ export async function addRunningSession(): Promise<string | null> {
   return data?.id ?? null;
 }
 
+/** Annulla una sessione running senza salvare (cancella dal DB). */
+export async function cancelRunningSession(sessionId: string): Promise<void> {
+  const session = await getSession();
+  if (!session) return;
+
+  await supabase
+    .from('gym_sessions')
+    .delete()
+    .eq('id', sessionId)
+    .eq('member_id', session.memberId)
+    .eq('type', 'running');
+
+  revalidatePath('/training');
+  revalidatePath('/training/running');
+}
+
 export async function finishRunningSession(
   sessionId: string,
   kmDistance: number,

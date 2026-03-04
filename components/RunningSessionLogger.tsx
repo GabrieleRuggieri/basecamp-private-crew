@@ -6,8 +6,18 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { BottomSheet } from '@/components/BottomSheet';
-import { addRunningSession, finishRunningSession } from '@/lib/actions/running';
+import { addRunningSession, finishRunningSession, cancelRunningSession } from '@/lib/actions/running';
+import { cancelGymSession } from '@/lib/actions/training';
+import {
+  getOtherActiveSession,
+  RUNNING_STORAGE_KEY,
+  getTrainingStorageKey,
+  TYPE_LABELS,
+  formatElapsed,
+  SESSION_MAX_AGE_MS,
+} from '@/lib/session-storage';
 import { cn } from '@/lib/utils';
 
 const MOODS = [
@@ -39,13 +49,10 @@ function calcPaceFloat(seconds: number, km: number): number {
   return seconds / 60 / km;
 }
 
-const STORAGE_KEY = 'basecamp_running_session';
-const SESSION_MAX_AGE_MS = 4 * 60 * 60 * 1000; // 4 ore
-
 function loadPersistedSession(): { sessionId: string; startedAt: number } | null {
   if (typeof window === 'undefined') return null;
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(RUNNING_STORAGE_KEY);
     if (!raw) return null;
     const data = JSON.parse(raw) as { sessionId: string; startedAt: number };
     if (!data.sessionId || !data.startedAt) return null;
@@ -58,7 +65,7 @@ function loadPersistedSession(): { sessionId: string; startedAt: number } | null
 
 function savePersistedSession(sessionId: string, startedAt: number) {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ sessionId, startedAt }));
+    localStorage.setItem(RUNNING_STORAGE_KEY, JSON.stringify({ sessionId, startedAt }));
   } catch {
     // ignore
   }
@@ -66,7 +73,7 @@ function savePersistedSession(sessionId: string, startedAt: number) {
 
 function clearPersistedSession() {
   try {
-    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(RUNNING_STORAGE_KEY);
   } catch {
     // ignore
   }
@@ -87,9 +94,22 @@ export function RunningSessionLogger({
   const [mood, setMood] = useState<string | null>(null);
   const [note, setNote] = useState('');
   const [isFinishing, setIsFinishing] = useState(false);
+  const [blockedBy, setBlockedBy] = useState<{
+    type: 'running' | 'gym' | 'tricking' | 'calisthenics';
+    sessionId: string;
+    startedAt: number;
+    elapsed: number;
+  } | null>(null);
+  const [initKey, setInitKey] = useState(0);
 
-  // Restore session from localStorage or create new one
+  // Controllo altra sessione attiva + restore o crea sessione running
   useEffect(() => {
+    const other = getOtherActiveSession('running');
+    if (other) {
+      setBlockedBy(other);
+      return;
+    }
+    setBlockedBy(null);
     const persisted = loadPersistedSession();
     if (persisted) {
       setSessionId(persisted.sessionId);
@@ -106,7 +126,7 @@ export function RunningSessionLogger({
         setSessionError(true);
       }
     });
-  }, []);
+  }, [initKey]);
 
   // Timer: elapsed calcolato da startedAt, così sopravvive a background/refresh
   const elapsed = startedAt ? Math.floor((Date.now() - startedAt) / 1000) : 0;
@@ -129,6 +149,53 @@ export function RunningSessionLogger({
     setShowFinishSheet(false);
     router.push(backHref);
   };
+
+  const handleCancel = async () => {
+    if (!sessionId) return;
+    clearPersistedSession();
+    await cancelRunningSession(sessionId);
+    router.push(backHref);
+  };
+
+  // Altra sessione già in corso: blocca avvio e invita ad annullare o completare
+  if (blockedBy) {
+    const otherLabel = TYPE_LABELS[blockedBy.type];
+    const otherHref = `/training/${blockedBy.type}/session`;
+    const handleCancelOther = async () => {
+      if (blockedBy.type === 'running') {
+        await cancelRunningSession(blockedBy.sessionId);
+        localStorage.removeItem(RUNNING_STORAGE_KEY);
+      } else {
+        await cancelGymSession(blockedBy.sessionId);
+        localStorage.removeItem(getTrainingStorageKey(blockedBy.type));
+      }
+      setBlockedBy(null);
+      setInitKey((k) => k + 1);
+    };
+    return (
+      <div className="px-5 pb-8 space-y-4">
+        <div className="card p-5 rounded-xl border-accent-red/30 border-2">
+          <p className="text-text-primary font-medium text-body mb-1">Sessione già in corso</p>
+          <p className="text-text-secondary text-footnote">
+            Hai una sessione <strong>{otherLabel}</strong> attiva ({formatElapsed(blockedBy.elapsed)}). Annullala o completala prima di iniziare la corsa.
+          </p>
+        </div>
+        <Link
+          href={otherHref}
+          className="btn w-full rounded-xl font-semibold flex items-center justify-center py-4 tap-target bg-accent-red text-white"
+        >
+          Vai alla sessione {otherLabel}
+        </Link>
+        <button
+          type="button"
+          onClick={handleCancelOther}
+          className="btn w-full rounded-xl font-medium flex items-center justify-center py-4 tap-target bg-surface-elevated text-text-secondary border border-[var(--card-border)]"
+        >
+          Annulla sessione {otherLabel}
+        </button>
+      </div>
+    );
+  }
 
   if (!sessionId) {
     return (
@@ -190,6 +257,13 @@ export function RunningSessionLogger({
         style={{ backgroundColor: 'var(--accent-red)' }}
       >
         Finish
+      </button>
+      <button
+        type="button"
+        onClick={handleCancel}
+        className="btn w-full mt-2 rounded-xl font-medium flex items-center justify-center py-3 tap-target touch-manipulation bg-surface-elevated text-text-tertiary border border-[var(--card-border)]"
+      >
+        Annulla sessione
       </button>
 
       <BottomSheet

@@ -37,6 +37,22 @@ export async function addGymSession(
   return data?.id ?? null;
 }
 
+/** Annulla una sessione gym/tricking/calisthenics senza salvare (cancella dal DB). */
+export async function cancelGymSession(sessionId: string): Promise<void> {
+  const session = await getSession();
+  if (!session) return;
+
+  await supabase
+    .from('gym_sessions')
+    .delete()
+    .eq('id', sessionId)
+    .eq('member_id', session.memberId)
+    .in('type', ['gym', 'tricking', 'calisthenics']);
+
+  revalidatePath('/training');
+  revalidatePath('/home');
+}
+
 export async function addGymSet(
   sessionId: string,
   exercise: string,

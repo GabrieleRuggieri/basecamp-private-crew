@@ -7,13 +7,24 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { BottomSheet } from '@/components/BottomSheet';
 import {
   addGymSession,
   addGymSet,
   finishGymSession,
+  cancelGymSession,
   type TrainingType,
 } from '@/lib/actions/training';
+import { cancelRunningSession } from '@/lib/actions/running';
+import {
+  getOtherActiveSession,
+  getTrainingStorageKey,
+  RUNNING_STORAGE_KEY,
+  TYPE_LABELS,
+  formatElapsed,
+  SESSION_MAX_AGE_MS,
+} from '@/lib/session-storage';
 import { cn } from '@/lib/utils';
 import { Trash2, Plus } from 'lucide-react';
 
@@ -39,16 +50,10 @@ const ACCENT_BY_TYPE: Record<TrainingType, string> = {
   running: 'accent-red',
 };
 
-const SESSION_MAX_AGE_MS = 4 * 60 * 60 * 1000; // 4 ore
-
-function getStorageKey(t: TrainingType) {
-  return `basecamp_training_session_${t}`;
-}
-
 function loadPersistedSession(type: TrainingType): { sessionId: string; startedAt: number } | null {
-  if (typeof window === 'undefined') return null;
+  if (typeof window === 'undefined' || type === 'running') return null;
   try {
-    const raw = localStorage.getItem(getStorageKey(type));
+    const raw = localStorage.getItem(getTrainingStorageKey(type));
     if (!raw) return null;
     const data = JSON.parse(raw) as { sessionId: string; startedAt: number };
     if (!data.sessionId || !data.startedAt) return null;
@@ -60,16 +65,18 @@ function loadPersistedSession(type: TrainingType): { sessionId: string; startedA
 }
 
 function savePersistedSession(type: TrainingType, sessionId: string, startedAt: number) {
+  if (type === 'running') return;
   try {
-    localStorage.setItem(getStorageKey(type), JSON.stringify({ sessionId, startedAt }));
+    localStorage.setItem(getTrainingStorageKey(type), JSON.stringify({ sessionId, startedAt }));
   } catch {
     // ignore
   }
 }
 
 function clearPersistedSession(type: TrainingType) {
+  if (type === 'running') return;
   try {
-    localStorage.removeItem(getStorageKey(type));
+    localStorage.removeItem(getTrainingStorageKey(type));
   } catch {
     // ignore
   }
@@ -94,14 +101,27 @@ export function TrainingSessionLogger({
   const [isFinishing, setIsFinishing] = useState(false);
   const [newPr, setNewPr] = useState<string | null>(null);
   const [prExercises, setPrExercises] = useState<string[]>([]);
+  const [blockedBy, setBlockedBy] = useState<{
+    type: 'running' | 'gym' | 'tricking' | 'calisthenics';
+    sessionId: string;
+    startedAt: number;
+    elapsed: number;
+  } | null>(null);
+  const [initKey, setInitKey] = useState(0);
 
   const accent = ACCENT_BY_TYPE[type];
 
   // elapsed calcolato da startedAt, così il timer sopravvive a background/refresh
   const elapsed = startedAt ? Math.floor((Date.now() - startedAt) / 1000) : 0;
 
-  // Restore session from localStorage or create new one
+  // Controllo altra sessione attiva + restore o crea sessione
   useEffect(() => {
+    const other = getOtherActiveSession(type);
+    if (other) {
+      setBlockedBy(other);
+      return;
+    }
+    setBlockedBy(null);
     const persisted = loadPersistedSession(type);
     if (persisted) {
       setSessionId(persisted.sessionId);
@@ -118,7 +138,7 @@ export function TrainingSessionLogger({
         setSessionError(true);
       }
     });
-  }, [type]);
+  }, [type, initKey]);
 
   // Timer: re-render ogni secondo per aggiornare elapsed
   useEffect(() => {
@@ -184,6 +204,53 @@ export function TrainingSessionLogger({
     const sec = s % 60;
     return `${m}:${sec.toString().padStart(2, '0')}`;
   };
+
+  const handleCancel = async () => {
+    if (!sessionId) return;
+    clearPersistedSession(type);
+    await cancelGymSession(sessionId);
+    router.push(backHref);
+  };
+
+  // Altra sessione già in corso: blocca avvio e invita ad annullare o completare
+  if (blockedBy) {
+    const otherLabel = TYPE_LABELS[blockedBy.type];
+    const otherHref = `/training/${blockedBy.type}/session`;
+    const handleCancelOther = async () => {
+      if (blockedBy.type === 'running') {
+        await cancelRunningSession(blockedBy.sessionId);
+        localStorage.removeItem(RUNNING_STORAGE_KEY);
+      } else {
+        await cancelGymSession(blockedBy.sessionId);
+        localStorage.removeItem(getTrainingStorageKey(blockedBy.type));
+      }
+      setBlockedBy(null);
+      setInitKey((k) => k + 1);
+    };
+    return (
+      <div className="px-6 pb-8 space-y-4">
+        <div className="card p-5 rounded-xl border-accent-red/30 border-2">
+          <p className="text-text-primary font-medium text-body mb-1">Sessione già in corso</p>
+          <p className="text-text-secondary text-footnote">
+            Hai una sessione <strong>{otherLabel}</strong> attiva ({formatElapsed(blockedBy.elapsed)}). Annullala o completala prima di iniziare questo allenamento.
+          </p>
+        </div>
+        <Link
+          href={otherHref}
+          className="btn w-full rounded-xl font-semibold flex items-center justify-center py-4 tap-target bg-accent-red text-white"
+        >
+          Vai alla sessione {otherLabel}
+        </Link>
+        <button
+          type="button"
+          onClick={handleCancelOther}
+          className="btn w-full rounded-xl font-medium flex items-center justify-center py-4 tap-target bg-surface-elevated text-text-secondary border border-[var(--card-border)]"
+        >
+          Annulla sessione {otherLabel}
+        </button>
+      </div>
+    );
+  }
 
   if (!sessionId) {
     return (
@@ -296,6 +363,13 @@ export function TrainingSessionLogger({
         style={{ backgroundColor: 'var(--accent-red)' }}
       >
         Finish
+      </button>
+      <button
+        type="button"
+        onClick={handleCancel}
+        className="btn w-full mt-3 rounded-xl font-medium flex items-center justify-center py-4 tap-target bg-surface-elevated text-text-secondary border border-[var(--card-border)]"
+      >
+        Annulla sessione
       </button>
 
       <BottomSheet
