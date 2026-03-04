@@ -190,7 +190,6 @@ export function MomentsGrid({
                     <AlbumCard
                       key={item.album.id}
                       album={item.album}
-                      memberId={memberId}
                       onPhotoClick={(index) => setViewing({ moments: item.album.moments, index })}
                       onAddPhotos={() => setAddToAlbum({ albumId: item.album.id, title: item.album.title ?? '' })}
                     />
@@ -219,7 +218,6 @@ export function MomentsGrid({
       >
         {addToAlbum && (
           <AddToAlbumForm
-            memberId={memberId}
             albumId={addToAlbum.albumId}
             files={addToAlbumFiles}
             setFiles={setAddToAlbumFiles}
@@ -248,7 +246,6 @@ export function MomentsGrid({
 }
 
 function AddToAlbumForm({
-  memberId,
   albumId,
   files,
   setFiles,
@@ -256,7 +253,6 @@ function AddToAlbumForm({
   onSuccess,
   onCancel,
 }: {
-  memberId: string;
   albumId: string;
   files: File[];
   setFiles: (f: File[]) => void;
@@ -356,16 +352,13 @@ function AddToAlbumForm({
 
 function AlbumCard({
   album,
-  memberId,
   onPhotoClick,
   onAddPhotos,
 }: {
   album: { id: string; member_id: string; title: string | null; created_at: string; moments: MomentWithUrl[] };
-  memberId: string;
   onPhotoClick: (index: number) => void;
   onAddPhotos: () => void;
 }) {
-  const isOwner = album.member_id === memberId;
   const firstPhoto = album.moments[0];
 
   return (
@@ -375,20 +368,18 @@ function AlbumCard({
         onClick={() => onPhotoClick(0)}
       >
         <MomentImage url={firstPhoto.imageUrl} />
-        {isOwner && (
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onAddPhotos();
-            }}
-            className="absolute top-2 right-2 z-10 min-w-[44px] min-h-[44px] w-11 h-11 rounded-full bg-black/60 text-white flex items-center justify-center text-xl active:bg-black/80 transition-colors touch-manipulation"
-            aria-label="Aggiungi foto"
-            title="Aggiungi foto"
-          >
-            +
-          </button>
-        )}
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onAddPhotos();
+          }}
+          className="absolute top-2 right-2 z-10 min-w-[44px] min-h-[44px] w-11 h-11 rounded-full bg-black/60 text-white flex items-center justify-center text-xl active:bg-black/80 transition-colors touch-manipulation"
+          aria-label="Aggiungi foto"
+          title="Aggiungi foto"
+        >
+          +
+        </button>
         {album.moments.length > 1 && (
           <div className="absolute bottom-2 right-2 bg-black/60 text-white text-footnote px-2 py-1 rounded">
             {album.moments.length} foto

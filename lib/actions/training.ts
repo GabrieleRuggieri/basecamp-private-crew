@@ -12,7 +12,7 @@ import { revalidatePath } from 'next/cache';
 import { supabase } from '@/lib/supabase';
 import { getSession } from '@/lib/actions/auth';
 
-export type TrainingType = 'gym' | 'tricking' | 'calisthenics';
+export type TrainingType = 'gym' | 'tricking' | 'calisthenics' | 'running';
 
 export async function addGymSession(
   type: TrainingType = 'gym'

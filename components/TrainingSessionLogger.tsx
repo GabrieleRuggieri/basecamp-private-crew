@@ -36,6 +36,7 @@ const ACCENT_BY_TYPE: Record<TrainingType, string> = {
   gym: 'accent-red',
   tricking: 'accent-red',
   calisthenics: 'accent-red',
+  running: 'accent-red',
 };
 
 export function TrainingSessionLogger({

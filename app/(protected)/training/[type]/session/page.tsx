@@ -1,8 +1,10 @@
 /**
  * Training session: timer, serie, Finish con mood picker.
- * Supporta gym, tricking, calisthenics.
+ * Supporta gym, tricking, calisthenics, running.
+ * Running usa RunningSessionLogger dedicato.
  */
 import { TrainingSessionLogger } from '@/components/TrainingSessionLogger';
+import { RunningSessionLogger } from '@/components/RunningSessionLogger';
 import { BackButton } from '@/components/BackButton';
 import { notFound } from 'next/navigation';
 import { isValidTrainingType } from '@/lib/constants';
@@ -12,6 +14,7 @@ const LABELS: Record<string, string> = {
   gym: 'Workout',
   tricking: 'Tricking',
   calisthenics: 'Calisthenics',
+  running: 'Running',
 };
 
 export default async function TrainingSessionPage({
@@ -34,10 +37,14 @@ export default async function TrainingSessionPage({
         </h1>
       </header>
 
-      <TrainingSessionLogger
-        type={type as TrainingType}
-        backHref={`/training/${type}`}
-      />
+      {type === 'running' ? (
+        <RunningSessionLogger backHref="/training/running" />
+      ) : (
+        <TrainingSessionLogger
+          type={type as TrainingType}
+          backHref={`/training/${type}`}
+        />
+      )}
     </main>
   );
 }

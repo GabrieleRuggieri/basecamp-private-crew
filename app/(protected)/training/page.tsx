@@ -3,7 +3,7 @@
  */
 import { getSession } from '@/lib/actions/auth';
 import Link from 'next/link';
-import { Dumbbell } from 'lucide-react';
+import { Dumbbell, Footprints } from 'lucide-react';
 import { TrickingIcon } from '@/components/icons/TrickingIcon';
 import { CalisthenicsIcon } from '@/components/icons/CalisthenicsIcon';
 
@@ -30,6 +30,14 @@ const TRAINING_TYPES = [
     label: 'Calisthenics',
     description: 'Esercizi a corpo libero',
     icon: CalisthenicsIcon,
+    accent: 'accent-red',
+  },
+  {
+    type: 'running',
+    href: '/training/running',
+    label: 'Running',
+    description: 'Corsa con km e pace',
+    icon: Footprints,
     accent: 'accent-red',
   },
 ] as const;

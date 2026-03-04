@@ -1,7 +1,8 @@
 /**
  * Progress view: tab PRs (lista), History (grafico volume), Crew (progressi crew), Stats (placeholder).
  * Recharts per il grafico volume nel tempo.
- * Supporta gym, tricking, calisthenics.
+ * Supporta gym, tricking, calisthenics, running.
+ * Running mostra grafico km, best km e best pace invece dei PR esercizi.
  */
 'use client';
 
@@ -16,6 +17,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { getGymPrs, getGymHistory, getCrewProgress, type CrewProgressMember } from '@/lib/actions/training-progress';
+import { getRunningHistory, type RunningSessionEntry } from '@/lib/actions/running';
 import { MemberAvatar } from '@/components/MemberAvatar';
 import type { TrainingType } from '@/lib/actions/training';
 
@@ -25,13 +27,22 @@ const ACCENT_BY_TYPE: Record<TrainingType, string> = {
   gym: 'accent-red',
   tricking: 'accent-red',
   calisthenics: 'accent-red',
+  running: 'accent-red',
 };
+
+function formatPace(paceMinKm: number): string {
+  if (!paceMinKm) return '--:--';
+  const min = Math.floor(paceMinKm);
+  const sec = Math.round((paceMinKm - min) * 60);
+  return `${min}:${String(sec).padStart(2, '0')}`;
+}
 
 export function TrainingProgressView({
   type = 'gym',
 }: {
   type?: TrainingType;
 }) {
+  const isRunning = type === 'running';
   const [tab, setTab] = useState<Tab>(type === 'tricking' ? 'history' : 'prs');
   const [prs, setPrs] = useState<
     { exercise: string; weight_kg: number | null; reps: number | null }[]
@@ -40,14 +51,23 @@ export function TrainingProgressView({
     volumeByDate: { date: string; volume: number }[];
     sessions: { id: string; date: string; duration_minutes: number }[];
   }>({ volumeByDate: [], sessions: [] });
+  const [runHistory, setRunHistory] = useState<{
+    sessions: RunningSessionEntry[];
+    bestKm: number | null;
+    bestPace: number | null;
+  }>({ sessions: [], bestKm: null, bestPace: null });
   const [crew, setCrew] = useState<CrewProgressMember[]>([]);
   const accent = ACCENT_BY_TYPE[type];
 
   useEffect(() => {
-    getGymPrs(type).then(setPrs);
-    getGymHistory(type).then(setHistory);
+    if (isRunning) {
+      getRunningHistory().then(setRunHistory);
+    } else {
+      getGymPrs(type).then(setPrs);
+      getGymHistory(type).then(setHistory);
+    }
     getCrewProgress(type).then(setCrew);
-  }, [type]);
+  }, [type, isRunning]);
 
   useEffect(() => {
     if (type === 'tricking' && tab === 'prs') setTab('history');
@@ -61,7 +81,7 @@ export function TrainingProgressView({
           { id: 'stats', label: 'Stats' },
         ]
       : [
-          { id: 'prs', label: 'PRs' },
+          { id: 'prs', label: isRunning ? 'Best' : 'PRs' },
           { id: 'history', label: 'History' },
           { id: 'crew', label: 'Crew' },
           { id: 'stats', label: 'Stats' },
@@ -90,7 +110,8 @@ export function TrainingProgressView({
         ))}
       </div>
 
-      {tab === 'prs' && type !== 'tricking' && (
+      {/* PRs / Best */}
+      {tab === 'prs' && !isRunning && type !== 'tricking' && (
         <div className="space-y-3">
           {prs.length === 0 ? (
             <p className="text-text-tertiary text-center py-8">Nessun PR ancora</p>
@@ -111,7 +132,35 @@ export function TrainingProgressView({
         </div>
       )}
 
-      {tab === 'history' && (
+      {tab === 'prs' && isRunning && (
+        <div className="space-y-3">
+          <div className="card p-5 rounded-xl flex items-center justify-between">
+            <div>
+              <p className="text-text-tertiary text-sm">Best km</p>
+              <p className={`text-3xl font-bold mt-1 text-[var(--${accent})]`}>
+                {runHistory.bestKm != null ? `${runHistory.bestKm.toFixed(2)} km` : '--'}
+              </p>
+            </div>
+            <span className="text-4xl">🏃</span>
+          </div>
+          <div className="card p-5 rounded-xl flex items-center justify-between">
+            <div>
+              <p className="text-text-tertiary text-sm">Best pace</p>
+              <p className={`text-3xl font-bold mt-1 text-[var(--${accent})]`}>
+                {runHistory.bestPace != null ? `${formatPace(runHistory.bestPace)} /km` : '--'}
+              </p>
+            </div>
+            <span className="text-4xl">⚡️</span>
+          </div>
+          <div className="card p-4 rounded-xl">
+            <p className="text-text-tertiary text-sm">Sessioni totali</p>
+            <p className="text-2xl font-bold text-text-primary mt-1">{runHistory.sessions.length}</p>
+          </div>
+        </div>
+      )}
+
+      {/* History */}
+      {tab === 'history' && !isRunning && (
         <div className="space-y-4">
           <div className="card p-4">
             <h3 className="text-text-secondary text-sm mb-4">Sessioni</h3>
@@ -146,11 +195,7 @@ export function TrainingProgressView({
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={history.volumeByDate}>
                     <CartesianGrid strokeDasharray="3 3" stroke="var(--separator)" />
-                    <XAxis
-                      dataKey="date"
-                      stroke="var(--text-tertiary)"
-                      tick={{ fontSize: 10 }}
-                    />
+                    <XAxis dataKey="date" stroke="var(--text-tertiary)" tick={{ fontSize: 10 }} />
                     <YAxis stroke="var(--text-tertiary)" tick={{ fontSize: 10 }} />
                     <Tooltip
                       contentStyle={{
@@ -175,6 +220,83 @@ export function TrainingProgressView({
         </div>
       )}
 
+      {tab === 'history' && isRunning && (
+        <div className="space-y-4">
+          {runHistory.sessions.length > 0 && (
+            <div className="card p-4">
+              <h3 className="text-text-secondary text-sm mb-4">Km per sessione</h3>
+              <div className="h-48">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart
+                    data={[...runHistory.sessions].reverse().map((s) => ({
+                      date: s.date,
+                      km: s.km,
+                    }))}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--separator)" />
+                    <XAxis dataKey="date" stroke="var(--text-tertiary)" tick={{ fontSize: 10 }} />
+                    <YAxis stroke="var(--text-tertiary)" tick={{ fontSize: 10 }} unit=" km" />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: 'var(--surface-elevated)',
+                        border: '1px solid var(--separator)',
+                        borderRadius: 12,
+                      }}
+                      labelStyle={{ color: 'var(--text-primary)' }}
+                      formatter={(v: number) => [`${v.toFixed(2)} km`, 'Km']}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="km"
+                      stroke={`var(--${accent})`}
+                      strokeWidth={2}
+                      dot={{ fill: `var(--${accent})` }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          )}
+          <div className="card p-4">
+            <h3 className="text-text-secondary text-sm mb-4">Sessioni</h3>
+            {runHistory.sessions.length === 0 ? (
+              <p className="text-text-tertiary text-sm">Nessuna sessione</p>
+            ) : (
+              <div className="space-y-2">
+                {runHistory.sessions.map((s) => (
+                  <div
+                    key={s.id}
+                    className="flex justify-between items-center py-2 border-b border-separator last:border-0"
+                  >
+                    <div>
+                      <span className="text-text-primary text-sm">
+                        {new Date(s.date).toLocaleDateString('it-IT', {
+                          day: 'numeric',
+                          month: 'short',
+                          year: 'numeric',
+                        })}
+                      </span>
+                      <span className="text-text-tertiary text-xs ml-2">
+                        {formatDuration(s.duration_minutes)}
+                      </span>
+                    </div>
+                    <div className="text-right">
+                      <span className={`text-[var(--${accent})] font-medium`}>
+                        {s.km.toFixed(2)} km
+                      </span>
+                      <span className="text-text-tertiary text-xs block">
+                        {formatPace(s.pace_min_km)}/km
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Crew */}
       {tab === 'crew' && (
         <div className="space-y-3">
           <h3 className="text-text-secondary text-sm mb-2">Progressi crew</h3>
@@ -215,6 +337,7 @@ export function TrainingProgressView({
         </div>
       )}
 
+      {/* Stats */}
       {tab === 'stats' && (
         <div className="card p-4">
           <h3 className="text-text-secondary text-sm mb-4">Heatmap presenze</h3>

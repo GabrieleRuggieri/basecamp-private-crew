@@ -13,17 +13,20 @@ const LABELS: Record<string, string> = {
   gym: 'Gym',
   tricking: 'Tricking',
   calisthenics: 'Calisthenics',
+  running: 'Running',
 };
 
 const SUBTITLES: Record<string, string> = {
   tricking: 'Parkour e acrobazie',
   calisthenics: 'Esercizi a corpo libero',
+  running: 'Corsa con km e pace',
 };
 
 const SESSION_LABELS: Record<string, string> = {
   gym: 'Start Workout',
   tricking: 'Start Session',
   calisthenics: 'Start Session',
+  running: 'Start Run',
 };
 
 export default async function TrainingTypePage({
