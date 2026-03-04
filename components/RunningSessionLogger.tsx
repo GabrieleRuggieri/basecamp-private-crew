@@ -175,23 +175,23 @@ export function RunningSessionLogger({
     return (
       <div className="px-5 pb-8 space-y-4">
         <div className="card p-5 rounded-xl border-accent-red/30 border-2">
-          <p className="text-text-primary font-medium text-body mb-1">Sessione già in corso</p>
+          <p className="text-text-primary font-medium text-body mb-1">Session already in progress</p>
           <p className="text-text-secondary text-footnote">
-            Hai una sessione <strong>{otherLabel}</strong> attiva ({formatElapsed(blockedBy.elapsed)}). Annullala o completala prima di iniziare la corsa.
+            You have an active <strong>{otherLabel}</strong> session ({formatElapsed(blockedBy.elapsed)}). Cancel or complete it before starting a run.
           </p>
         </div>
         <Link
           href={otherHref}
           className="btn w-full rounded-xl font-semibold flex items-center justify-center py-4 tap-target bg-accent-red text-white"
         >
-          Vai alla sessione {otherLabel}
+          Go to {otherLabel} session
         </Link>
         <button
           type="button"
           onClick={handleCancelOther}
           className="btn w-full rounded-xl font-medium flex items-center justify-center py-4 tap-target bg-surface-elevated text-text-secondary border border-[var(--card-border)]"
         >
-          Annulla sessione {otherLabel}
+          Cancel {otherLabel} session
         </button>
       </div>
     );
@@ -202,13 +202,13 @@ export function RunningSessionLogger({
       <div className="flex flex-col items-center justify-center min-h-[40dvh] px-5 text-center">
         {sessionError ? (
           <>
-            <p className="text-text-primary font-medium text-body">Errore sessione</p>
+            <p className="text-text-primary font-medium text-body">Session error</p>
             <p className="text-text-tertiary text-footnote mt-2 max-w-[280px]">
-              Esci e rientra. Se il problema persiste esegui supabase/08-add-running.sql
+              Leave and re-enter. If the issue persists run supabase/08-add-running.sql
             </p>
           </>
         ) : (
-          <p className="text-text-tertiary text-body">Caricamento...</p>
+          <p className="text-text-tertiary text-body">Loading...</p>
         )}
       </div>
     );
@@ -218,7 +218,7 @@ export function RunningSessionLogger({
     <div className="px-5 pb-8 safe-area-bottom space-y-4">
       {/* Timer — grande e leggibile come app running */}
       <div className="card p-5 rounded-xl">
-        <p className="text-text-tertiary text-footnote mb-1">Tempo</p>
+        <p className="text-text-tertiary text-footnote mb-1">Time</p>
         <p className="text-[2.75rem] sm:text-4xl font-mono font-semibold text-text-primary tabular-nums tracking-tight">
           {formatTime(elapsed)}
         </p>
@@ -227,7 +227,7 @@ export function RunningSessionLogger({
       {/* Km + pace — layout compatto, input 16px per evitare zoom iOS */}
       <div className="card p-5 rounded-xl space-y-4">
         <div>
-          <label className="text-text-tertiary text-footnote block mb-2">Km percorsi</label>
+          <label className="text-text-tertiary text-footnote block mb-2">Distance (km)</label>
           <div className="flex items-center gap-3">
             <input
               type="number"
@@ -244,7 +244,7 @@ export function RunningSessionLogger({
         </div>
 
         <div className="flex items-center justify-between pt-3 border-t border-separator">
-          <p className="text-text-tertiary text-footnote">Pace attuale</p>
+          <p className="text-text-tertiary text-footnote">Current pace</p>
           <p className="text-text-primary font-mono text-body font-semibold tabular-nums">
             {paceDisplay} <span className="text-text-tertiary text-footnote font-normal">/km</span>
           </p>
@@ -263,19 +263,19 @@ export function RunningSessionLogger({
         onClick={handleCancel}
         className="btn w-full mt-2 rounded-xl font-medium flex items-center justify-center py-3 tap-target touch-manipulation bg-surface-elevated text-text-tertiary border border-[var(--card-border)]"
       >
-        Annulla sessione
+        Cancel session
       </button>
 
       <BottomSheet
         isOpen={showFinishSheet}
         onClose={() => !isFinishing && setShowFinishSheet(false)}
-        title="Come ti senti?"
+        title="How do you feel?"
       >
         <div className="space-y-5">
           {/* Riepilogo — compatto per iPhone */}
           <div className="grid grid-cols-3 gap-2">
             <div className="card p-3 rounded-xl text-center min-w-0">
-              <p className="text-text-tertiary text-caption mb-0.5">Tempo</p>
+              <p className="text-text-tertiary text-caption mb-0.5">Time</p>
               <p className="text-text-primary font-mono text-subhead font-semibold tabular-nums truncate">{formatTime(elapsed)}</p>
             </div>
             <div className="card p-3 rounded-xl text-center min-w-0">
@@ -289,7 +289,7 @@ export function RunningSessionLogger({
           </div>
 
           {kmValue <= 0 && (
-            <p className="text-accent-red text-footnote text-center">Inserisci i km prima di finire</p>
+            <p className="text-accent-red text-footnote text-center">Enter distance (km) before finishing</p>
           )}
 
           {/* Mood — tap-target 44px minimo per iOS */}
@@ -316,7 +316,7 @@ export function RunningSessionLogger({
             <textarea
               value={note}
               onChange={(e) => setNote(e.target.value)}
-              placeholder="Opzionale"
+              placeholder="Optional"
               className="w-full bg-surface-elevated rounded-button p-3 text-body text-text-primary placeholder:text-text-tertiary border border-separator focus:outline-none focus:border-accent-red min-h-[80px] touch-manipulation"
             />
           </div>
@@ -331,7 +331,7 @@ export function RunningSessionLogger({
                 : 'bg-surface-elevated text-text-tertiary cursor-not-allowed'
             )}
           >
-            {isFinishing ? 'Salvataggio...' : 'Conferma'}
+            {isFinishing ? 'Saving...' : 'Confirm'}
           </button>
         </div>
       </BottomSheet>

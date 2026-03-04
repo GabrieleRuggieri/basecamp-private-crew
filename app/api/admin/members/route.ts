@@ -13,7 +13,7 @@ export async function GET(request: Request) {
 
   if (!adminToken) {
     return NextResponse.json(
-      { error: 'Manca token admin. Uso: /api/admin/members?token=ADMIN_TOKEN' },
+      { error: 'Missing admin token. Usage: /api/admin/members?token=ADMIN_TOKEN' },
       { status: 400 }
     );
   }
@@ -25,7 +25,7 @@ export async function GET(request: Request) {
     .single();
 
   if (!config) {
-    return NextResponse.json({ error: 'Token admin non valido' }, { status: 401 });
+    return NextResponse.json({ error: 'Invalid admin token' }, { status: 401 });
   }
 
   const { data: members, error } = await supabase

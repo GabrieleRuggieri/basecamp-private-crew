@@ -55,7 +55,7 @@ export function FeedItemComponent({
             />
             {isAlbum && albumCount != null && albumCount > 1 && (
               <div className="absolute bottom-2 right-2 bg-black/60 text-white text-footnote px-2 py-1 rounded">
-                {albumCount} foto
+                {albumCount} photos
               </div>
             )}
           </div>
@@ -64,14 +64,14 @@ export function FeedItemComponent({
           <div className="shrink-0">
             <MemberAvatar
               emoji={isAnonymous ? '?' : author?.emoji ?? '👤'}
-              name={isAnonymous ? 'Anonimo' : author?.name ?? 'Unknown'}
+              name={isAnonymous ? 'Anonymous' : author?.name ?? 'Unknown'}
               size="sm"
             />
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-footnote font-medium text-text-primary">
-                {isAnonymous ? 'Anonimo' : author?.name ?? 'Unknown'}
+                {isAnonymous ? 'Anonymous' : author?.name ?? 'Unknown'}
               </span>
               <span className="text-caption text-text-tertiary">
                 {formatDate(item.created_at)}
@@ -163,7 +163,7 @@ export function FeedItemComponent({
               <p className={`text-text-primary text-footnote mt-1 line-clamp-2`}>
                 {item.content}
                 {isAlbum && albumCount != null && albumCount > 1 && (
-                  <span className="text-text-tertiary ml-1">· {albumCount} foto</span>
+                  <span className="text-text-tertiary ml-1">· {albumCount} photos</span>
                 )}
               </p>
             )}
@@ -178,8 +178,8 @@ function formatDate(iso: string) {
   const d = new Date(iso);
   const now = new Date();
   const diff = now.getTime() - d.getTime();
-  if (diff < 60000) return 'ora';
+  if (diff < 60000) return 'now';
   if (diff < 3600000) return `${Math.floor(diff / 60000)}m`;
   if (diff < 86400000) return `${Math.floor(diff / 3600000)}h`;
-  return d.toLocaleDateString('it-IT', { day: 'numeric', month: 'short' });
+  return d.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
 }

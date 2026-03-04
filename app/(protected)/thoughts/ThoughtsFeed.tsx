@@ -28,8 +28,8 @@ export function ThoughtsFeed({
     <div className="space-y-4">
       {thoughts.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 text-center">
-          <p className="text-subhead text-text-tertiary">Nessun thought ancora</p>
-          <p className="text-caption text-text-tertiary mt-2">Scrivi il primo</p>
+          <p className="text-subhead text-text-tertiary">No thoughts yet</p>
+          <p className="text-caption text-text-tertiary mt-2">Write the first one</p>
         </div>
       ) : (
         thoughts.map((t) => (
@@ -47,8 +47,8 @@ export function ThoughtsFeed({
 
 const THOUGHT_TAGS: { value: ThoughtTag; label: string }[] = [
   { value: 'side_quest', label: 'Side quest' },
-  { value: 'riflessione', label: 'Riflessione' },
-  { value: 'proposta', label: 'Proposta' },
+  { value: 'riflessione', label: 'Reflection' },
+  { value: 'proposta', label: 'Proposal' },
 ];
 
 function ThoughtCard({
@@ -112,13 +112,13 @@ function ThoughtCard({
       <div className="flex gap-3">
         <MemberAvatar
           emoji={thought.anonymous ? '?' : thought.author?.emoji ?? '👤'}
-          name={thought.anonymous ? 'Anonimo' : thought.author?.name ?? 'Unknown'}
+          name={thought.anonymous ? 'Anonymous' : thought.author?.name ?? 'Unknown'}
           size="sm"
         />
         <div className="flex-1 min-w-0">
           <div className="flex gap-2 flex-wrap mb-1 items-center">
             <span className="text-text-secondary text-xs">
-              {thought.anonymous ? 'Anonimo' : thought.author?.name}
+              {thought.anonymous ? 'Anonymous' : thought.author?.name}
             </span>
             {!isEditing && thought.tags?.length > 0 &&
               thought.tags.map((tag) => (
@@ -132,7 +132,7 @@ function ThoughtCard({
                 onClick={() => setIsEditing(true)}
                 className="text-xs text-text-tertiary hover:text-accent-purple ml-auto"
               >
-                Modifica
+                Edit
               </button>
             )}
           </div>
@@ -166,7 +166,7 @@ function ThoughtCard({
                   onChange={(e) => setEditAnonymous(e.target.checked)}
                   className="rounded"
                 />
-                Anonimo
+                Anonymous
               </label>
               <div className="flex gap-2">
                 <button
@@ -175,7 +175,7 @@ function ThoughtCard({
                   disabled={!editContent.trim() || isSubmitting}
                   className="text-sm text-accent-purple font-medium"
                 >
-                  Salva
+                  Save
                 </button>
                 <button
                   type="button"
@@ -187,7 +187,7 @@ function ThoughtCard({
                   }}
                   className="text-sm text-text-tertiary"
                 >
-                  Annulla
+                  Cancel
                 </button>
               </div>
             </div>
@@ -229,7 +229,7 @@ function ThoughtCard({
                 type="text"
                 value={commentDraft}
                 onChange={(e) => setCommentDraft(e.target.value)}
-                placeholder="Aggiungi un commento..."
+                placeholder="Add a comment..."
                 className="w-full bg-surface-elevated border border-[var(--card-border)] rounded-lg px-3 py-2 text-sm text-text-primary placeholder:text-text-tertiary"
                 maxLength={500}
               />
@@ -239,7 +239,7 @@ function ThoughtCard({
                   disabled={isSubmitting}
                   className="mt-2 text-sm text-accent-purple font-medium"
                 >
-                  Invia
+                  Send
                 </button>
               )}
             </form>
@@ -268,7 +268,7 @@ function ThoughtCard({
                       disabled={!commentEditValue.trim() || isSubmitting}
                       className="text-sm text-accent-purple font-medium"
                     >
-                      Salva
+                      Save
                     </button>
                     <button
                       type="button"
@@ -278,13 +278,13 @@ function ThoughtCard({
                       }}
                       className="text-sm text-text-tertiary"
                     >
-                      Annulla
+                      Cancel
                     </button>
                   </div>
                 </>
               ) : (
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-text-tertiary text-sm italic">Il tuo commento: {myComment.comment}</span>
+                  <span className="text-text-tertiary text-sm italic">Your comment: {myComment.comment}</span>
                   <button
                     type="button"
                     onClick={() => {
@@ -293,14 +293,14 @@ function ThoughtCard({
                     }}
                     className="text-xs text-text-tertiary hover:text-accent-purple"
                   >
-                    Modifica
+                    Edit
                   </button>
                   <button
                     type="button"
                     onClick={() => removeReaction('thought', thought.id)}
                     className="text-xs text-text-tertiary hover:text-text-secondary"
                   >
-                    Rimuovi
+                    Remove
                   </button>
                 </div>
               )}

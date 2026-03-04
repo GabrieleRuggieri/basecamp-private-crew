@@ -6,10 +6,10 @@ import { cn } from '@/lib/utils';
 import type { ThoughtTag } from '@/lib/actions/thoughts';
 
 const TAGS: { value: ThoughtTag | null; label: string }[] = [
-  { value: null, label: 'Tutti' },
+  { value: null, label: 'All' },
   { value: 'side_quest', label: 'Side quest' },
-  { value: 'riflessione', label: 'Riflessione' },
-  { value: 'proposta', label: 'Proposta' },
+  { value: 'riflessione', label: 'Reflection' },
+  { value: 'proposta', label: 'Proposal' },
 ];
 
 export function ThoughtTagFilter({ currentTag }: { currentTag: ThoughtTag | null }) {

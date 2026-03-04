@@ -45,7 +45,7 @@ export default async function TrainingCrewPage({
       <div className="px-5 space-y-3 pb-8">
         {members.length === 0 ? (
           <div className="card p-8 rounded-xl">
-            <p className="text-subhead text-text-tertiary text-center">Nessun membro</p>
+            <p className="text-subhead text-text-tertiary text-center">No members</p>
           </div>
         ) : (
           members.map((m) => (

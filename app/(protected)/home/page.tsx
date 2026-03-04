@@ -49,7 +49,7 @@ export default async function HomePage() {
       {/* Hero welcome */}
       <section className="relative px-5 pt-4 pb-6">
         <p className="text-display font-bold text-text-primary leading-tight" style={{ letterSpacing: '-0.04em' }}>
-          Ciao, {session.name}
+          Hi, {session.name}
         </p>
       </section>
 
@@ -58,10 +58,10 @@ export default async function HomePage() {
         {!hasAny ? (
           <div className="card p-10 rounded-2xl flex flex-col items-center justify-center text-center border-dashed border-2 border-white/10">
             <p className="text-subhead text-text-secondary font-medium">
-              Nessuna attività
+              No activity yet
             </p>
             <p className="text-caption text-text-tertiary mt-2">
-              Inizia da Thoughts, Training, Travels, Watchlist o Moments
+              Start from Thoughts, Training, Travels, Watchlist or Moments
             </p>
           </div>
         ) : (
@@ -80,7 +80,7 @@ export default async function HomePage() {
                       href={href}
                       className="text-footnote text-text-tertiary hover:text-text-secondary"
                     >
-                      Vedi tutti
+                      See all
                     </Link>
                   </div>
                   <div className="space-y-3">

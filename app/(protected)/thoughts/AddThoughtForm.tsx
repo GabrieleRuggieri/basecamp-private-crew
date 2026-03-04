@@ -11,8 +11,8 @@ import { cn } from '@/lib/utils';
 
 const THOUGHT_TAGS: { value: ThoughtTag; label: string }[] = [
   { value: 'side_quest', label: 'Side quest' },
-  { value: 'riflessione', label: 'Riflessione' },
-  { value: 'proposta', label: 'Proposta' },
+  { value: 'riflessione', label: 'Reflection' },
+  { value: 'proposta', label: 'Proposal' },
 ];
 
 export function AddThoughtForm() {
@@ -44,7 +44,7 @@ export function AddThoughtForm() {
       <textarea
         value={content}
         onChange={(e) => setContent(e.target.value)}
-        placeholder="Cosa stai pensando?"
+        placeholder="What's on your mind?"
         className="w-full bg-surface rounded-xl p-4 text-body text-text-primary placeholder:text-text-tertiary border border-[var(--card-border)] focus:outline-none focus:border-accent-purple/50 min-h-[100px] resize-none transition-colors"
         required
       />
@@ -73,7 +73,7 @@ export function AddThoughtForm() {
             onChange={(e) => setAnonymous(e.target.checked)}
             className="rounded border-[var(--separator)]"
           />
-          Anonimo
+          Anonymous
         </label>
         <button
           type="submit"

@@ -51,7 +51,7 @@ export function CrewMemberCard({
         <div className="flex-1 min-w-0">
           <p className="text-subhead font-semibold text-text-primary">{member.name}</p>
           <p className="text-footnote text-text-tertiary mt-0.5">
-            PR: {member.pr_count ?? 0} · Sessioni: {member.sessions_count ?? 0}
+            PR: {member.pr_count ?? 0} · Sessions: {member.sessions_count ?? 0}
           </p>
 
           <div className="flex gap-2 mt-2 flex-wrap">
@@ -88,7 +88,7 @@ export function CrewMemberCard({
                 type="text"
                 value={commentDraft}
                 onChange={(e) => setCommentDraft(e.target.value)}
-                placeholder="Aggiungi un commento..."
+                placeholder="Add a comment..."
                 className="w-full bg-surface-elevated border border-[var(--card-border)] rounded-lg px-3 py-2 text-sm text-text-primary placeholder:text-text-tertiary"
                 maxLength={500}
               />
@@ -98,18 +98,18 @@ export function CrewMemberCard({
                   disabled={isSubmitting}
                   className="mt-2 text-sm text-accent-purple font-medium"
                 >
-                  Invia
+                  Send
                 </button>
               )}
             </form>
           ) : (
             <div className="mt-2 flex items-center gap-2">
-              <span className="text-text-tertiary text-sm italic">Il tuo commento: {myComment.comment}</span>
+              <span className="text-text-tertiary text-sm italic">Your comment: {myComment.comment}</span>
               <button
                 onClick={() => removeReaction(targetType, member.id)}
                 className="text-xs text-text-tertiary hover:text-text-secondary"
               >
-                Rimuovi
+                Remove
               </button>
             </div>
           )}

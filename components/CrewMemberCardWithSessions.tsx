@@ -28,7 +28,7 @@ function formatSessionDate(endedAt: string | null) {
   yesterday.setDate(yesterday.getDate() - 1);
   if (d.toDateString() === today.toDateString()) return 'Oggi';
   if (d.toDateString() === yesterday.toDateString()) return 'Ieri';
-  return d.toLocaleDateString('it-IT', { day: 'numeric', month: 'short' });
+  return d.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
 }
 
 function SessionCard({
@@ -131,7 +131,7 @@ function SessionCard({
             type="text"
             value={commentDraft}
             onChange={(e) => setCommentDraft(e.target.value)}
-            placeholder="Commenta..."
+            placeholder="Comment..."
             className="w-full bg-transparent border border-[var(--card-border)] rounded-lg px-2 py-1.5 text-xs text-text-primary placeholder:text-text-tertiary"
             maxLength={500}
           />
@@ -141,7 +141,7 @@ function SessionCard({
               disabled={isSubmitting}
               className="mt-1 text-xs text-accent-purple font-medium"
             >
-              Invia
+              Send
             </button>
           )}
         </form>
@@ -170,7 +170,7 @@ function SessionCard({
                   disabled={!commentEditValue.trim() || isSubmitting}
                   className="text-xs text-accent-purple font-medium"
                 >
-                  Salva
+                  Save
                 </button>
                 <button
                   type="button"
@@ -180,13 +180,13 @@ function SessionCard({
                   }}
                   className="text-xs text-text-tertiary"
                 >
-                  Annulla
+                  Cancel
                 </button>
               </div>
             </>
           ) : (
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-text-tertiary text-xs italic">Il tuo: {myComment.comment}</span>
+              <span className="text-text-tertiary text-xs italic">Your comment: {myComment.comment}</span>
               <button
                 type="button"
                 onClick={() => {
@@ -195,14 +195,14 @@ function SessionCard({
                 }}
                 className="text-xs text-text-tertiary hover:text-accent-purple"
               >
-                Modifica
+                Edit
               </button>
               <button
                 type="button"
                 onClick={() => removeReaction('gym_session', session.id)}
                 className="text-xs text-text-tertiary hover:text-text-secondary"
               >
-                Rimuovi
+                Remove
               </button>
             </div>
           )}
@@ -240,7 +240,7 @@ export function CrewMemberCardWithSessions({
 
       <div className="mt-4 space-y-3">
         {sessionsToShow.length === 0 ? (
-          <p className="text-footnote text-text-tertiary">Nessuna sessione</p>
+          <p className="text-footnote text-text-tertiary">No sessions</p>
         ) : (
           sessionsToShow.map((session) => (
             <SessionCard

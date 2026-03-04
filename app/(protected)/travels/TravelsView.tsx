@@ -116,7 +116,7 @@ export function TravelsView({
       <div className="grid grid-cols-2 gap-3">
         {filtered.length === 0 ? (
           <p className="col-span-2 text-text-tertiary text-center py-8">
-            Nessun viaggio
+            No travels yet
           </p>
         ) : (
           filtered.map((t) => (
@@ -136,7 +136,7 @@ export function TravelsView({
                 onClick={() => openEdit(t)}
                 className="text-xs text-text-tertiary hover:text-accent-blue shrink-0"
               >
-                Modifica
+                Edit
               </button>
             </div>
           ))
@@ -149,11 +149,11 @@ export function TravelsView({
           setShowAdd(false);
           setEditingTravel(null);
         }}
-        title={editingTravel ? 'Modifica viaggio' : 'Aggiungi viaggio'}
+        title={editingTravel ? 'Edit travel' : 'Add travel'}
       >
         <div className="space-y-4">
           <div>
-            <label className="text-text-secondary text-sm block mb-2">Titolo</label>
+            <label className="text-text-secondary text-sm block mb-2">Title</label>
             <input
               type="text"
               value={title}
@@ -163,7 +163,7 @@ export function TravelsView({
             />
           </div>
           <div>
-            <label className="text-text-secondary text-sm block mb-2">Luogo</label>
+            <label className="text-text-secondary text-sm block mb-2">Location</label>
             <input
               type="text"
               value={location}
@@ -173,7 +173,7 @@ export function TravelsView({
             />
           </div>
           <div>
-            <label className="text-text-secondary text-sm block mb-2">Emoji paese</label>
+            <label className="text-text-secondary text-sm block mb-2">Country emoji</label>
             <input
               type="text"
               value={countryEmoji}
@@ -194,7 +194,7 @@ export function TravelsView({
             </select>
           </div>
           <div>
-            <label className="text-text-secondary text-sm block mb-2">Anno</label>
+            <label className="text-text-secondary text-sm block mb-2">Year</label>
             <input
               type="number"
               value={year}
@@ -209,7 +209,7 @@ export function TravelsView({
               type="text"
               value={note}
               onChange={(e) => setNote(e.target.value)}
-              placeholder="Opzionale"
+              placeholder="Optional"
               className="w-full bg-surface-elevated rounded-xl p-3.5 text-body text-text-primary placeholder:text-text-tertiary border border-[var(--card-border)] focus:outline-none focus:border-accent-blue/50"
             />
           </div>
@@ -218,7 +218,7 @@ export function TravelsView({
             disabled={!title.trim() || !location.trim()}
             className="btn w-full bg-accent-blue text-white rounded-xl"
           >
-            {editingTravel ? 'Salva' : 'Aggiungi'}
+            {editingTravel ? 'Save' : 'Add'}
           </button>
         </div>
       </BottomSheet>

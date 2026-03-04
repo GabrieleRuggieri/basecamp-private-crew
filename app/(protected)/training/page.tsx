@@ -12,7 +12,7 @@ const TRAINING_TYPES = [
     type: 'gym',
     href: '/training/gym',
     label: 'Gym',
-    description: 'Allenamento in palestra',
+    description: 'Gym workout',
     icon: Dumbbell,
     accent: 'accent-red',
   },
@@ -20,7 +20,7 @@ const TRAINING_TYPES = [
     type: 'tricking',
     href: '/training/tricking',
     label: 'Tricking',
-    description: 'Parkour e acrobazie',
+    description: 'Parkour and acrobatics',
     icon: TrickingIcon,
     accent: 'accent-red',
   },
@@ -28,7 +28,7 @@ const TRAINING_TYPES = [
     type: 'calisthenics',
     href: '/training/calisthenics',
     label: 'Calisthenics',
-    description: 'Esercizi a corpo libero',
+    description: 'Bodyweight exercises',
     icon: CalisthenicsIcon,
     accent: 'accent-red',
   },
@@ -36,7 +36,7 @@ const TRAINING_TYPES = [
     type: 'running',
     href: '/training/running',
     label: 'Running',
-    description: 'Corsa con km e pace',
+    description: 'Run with km and pace',
     icon: Footprints,
     accent: 'accent-red',
   },
@@ -56,7 +56,7 @@ export default async function TrainingPage() {
           Training
         </h1>
         <p className="text-footnote text-text-tertiary mt-1">
-          Scegli il tipo di allenamento
+          Choose workout type
         </p>
       </header>
 

@@ -32,14 +32,14 @@ export default async function LandingPage() {
           </div>
         </div>
         <p className="text-body text-text-tertiary max-w-[280px] leading-relaxed">
-          Avvicina il telefono al tag NFC
+          Hold your phone near the NFC tag
         </p>
         {devToken && (
           <a
             href={`/enter/${devToken}`}
             className="btn px-8 py-3 bg-accent-blue/20 text-accent-blue border border-accent-blue/40 rounded-xl font-medium hover:bg-accent-blue/30 transition-colors inline-block"
           >
-            Simula NFC
+            Simulate NFC
           </a>
         )}
       </div>

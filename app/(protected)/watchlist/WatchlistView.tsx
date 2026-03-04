@@ -15,11 +15,11 @@ type Status = 'want' | 'doing' | 'done';
 type TypeFilter = 'movie' | 'series' | 'book' | 'podcast' | 'other' | 'all';
 
 const TYPE_CONFIG: Record<string, { label: string; icon: typeof Film }> = {
-  movie: { label: 'Film', icon: Film },
-  series: { label: 'Serie', icon: Tv },
-  book: { label: 'Libro', icon: BookOpen },
+  movie: { label: 'Movie', icon: Film },
+  series: { label: 'Series', icon: Tv },
+  book: { label: 'Book', icon: BookOpen },
   podcast: { label: 'Podcast', icon: Mic2 },
-  other: { label: 'Altro', icon: Package },
+  other: { label: 'Other', icon: Package },
 };
 
 export function WatchlistView({
@@ -68,12 +68,12 @@ export function WatchlistView({
   ];
 
   const typeFilters: { id: TypeFilter; label: string }[] = [
-    { id: 'all', label: 'Tutti' },
-    { id: 'movie', label: 'Film' },
-    { id: 'series', label: 'Serie' },
-    { id: 'book', label: 'Libri' },
+    { id: 'all', label: 'All' },
+    { id: 'movie', label: 'Movie' },
+    { id: 'series', label: 'Series' },
+    { id: 'book', label: 'Books' },
     { id: 'podcast', label: 'Podcast' },
-    { id: 'other', label: 'Altro' },
+    { id: 'other', label: 'Other' },
   ];
 
   return (
@@ -120,7 +120,7 @@ export function WatchlistView({
         className="btn w-full bg-accent-orange/15 text-accent-orange border border-accent-orange/30 rounded-xl mb-6 flex items-center justify-center gap-2 hover:bg-accent-orange/25 transition-colors"
       >
         <Plus size={20} strokeWidth={2} />
-        Aggiungi titolo
+        Add title
       </button>
 
       {/* List */}
@@ -131,10 +131,10 @@ export function WatchlistView({
               <Film className="w-7 h-7 text-text-tertiary" />
             </div>
             <p className="text-subhead text-text-secondary font-medium">
-              Nessun titolo
+              No titles yet
             </p>
             <p className="text-caption text-text-tertiary mt-2">
-              Aggiungi film, serie o libri che vuoi vedere
+              Add movies, series or books you want to watch
             </p>
           </div>
         ) : (
@@ -165,7 +165,7 @@ export function WatchlistView({
                       onClick={() => openEdit(item)}
                       className="text-xs text-text-tertiary hover:text-accent-orange"
                     >
-                      Modifica
+                      Edit
                     </button>
                   <select
                     value={item.status}
@@ -193,11 +193,11 @@ export function WatchlistView({
           setShowAdd(false);
           setEditingItem(null);
         }}
-        title={editingItem ? 'Modifica titolo' : 'Aggiungi titolo'}
+        title={editingItem ? 'Edit title' : 'Add title'}
       >
         <div className="space-y-4">
           <div>
-            <label className="text-text-secondary text-sm block mb-2">Titolo</label>
+            <label className="text-text-secondary text-sm block mb-2">Title</label>
             <input
               type="text"
               value={title}
@@ -207,17 +207,17 @@ export function WatchlistView({
             />
           </div>
           <div>
-            <label className="text-text-secondary text-sm block mb-2">Tipo</label>
+            <label className="text-text-secondary text-sm block mb-2">Type</label>
             <select
               value={type}
               onChange={(e) => setType(e.target.value as TypeFilter)}
               className="w-full bg-surface-elevated rounded-xl p-3 text-text-primary border border-[var(--card-border)] focus:outline-none focus:ring-2 focus:ring-accent-orange/30"
             >
-              <option value="movie">Film</option>
-              <option value="series">Serie</option>
-              <option value="book">Libro</option>
+              <option value="movie">Movie</option>
+              <option value="series">Series</option>
+              <option value="book">Book</option>
               <option value="podcast">Podcast</option>
-              <option value="other">Altro</option>
+              <option value="other">Other</option>
             </select>
           </div>
           <button
@@ -225,7 +225,7 @@ export function WatchlistView({
             disabled={!title.trim()}
             className="btn w-full bg-accent-orange text-white rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {editingItem ? 'Salva' : 'Aggiungi'}
+            {editingItem ? 'Save' : 'Add'}
           </button>
         </div>
       </BottomSheet>

@@ -34,7 +34,7 @@ function groupByMonth(items: MomentItem[]): { key: string; label: string; items:
 
 function formatDate(iso: string) {
   const d = new Date(iso);
-  return d.toLocaleDateString('it-IT', { day: 'numeric', month: 'short', year: 'numeric' });
+  return d.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
 export function MomentsGrid({
@@ -122,7 +122,7 @@ export function MomentsGrid({
           onClick={() => inputRef.current?.click()}
           className="btn w-full bg-accent-green/15 text-accent-green border border-accent-green/30 mb-6 rounded-xl"
         >
-          + Aggiungi foto
+          + Add photo
         </button>
       ) : (
         <div className="card p-4 mb-6 space-y-3">
@@ -137,18 +137,18 @@ export function MomentsGrid({
               type="button"
               onClick={() => inputRef.current?.click()}
               className="aspect-square rounded-lg border-2 border-dashed border-[var(--separator)] text-text-tertiary flex items-center justify-center text-2xl hover:border-accent-green/50 hover:text-accent-green transition-colors"
-              aria-label="Aggiungi altra foto"
+              aria-label="Add another photo"
             >
               +
             </button>
           </div>
           <p className="text-footnote text-text-tertiary">
-            {previewFiles.length} {previewFiles.length === 1 ? 'foto' : 'foto'} —{' '}
-            {previewFiles.length === 1 ? 'singola' : 'album (cartella)'}
+            {previewFiles.length} {previewFiles.length === 1 ? 'photo' : 'photos'} —{' '}
+            {previewFiles.length === 1 ? 'single' : 'album (folder)'}
           </p>
           <input
             type="text"
-            placeholder={previewFiles.length === 1 ? 'Titolo (opzionale)' : 'Titolo album, es. Vacanza Grecia'}
+            placeholder={previewFiles.length === 1 ? 'Title (optional)' : 'Album title, e.g. Greece trip'}
             value={caption}
             onChange={(e) => setCaption(e.target.value)}
             className="w-full px-4 py-3 rounded-lg bg-surface-elevated border border-[var(--card-border)] text-text-primary placeholder:text-text-tertiary text-body focus:outline-none focus:ring-2 focus:ring-accent-green/50"
@@ -158,14 +158,14 @@ export function MomentsGrid({
               onClick={cancelPreview}
               className="flex-1 py-3 rounded-lg border border-[var(--separator)] text-text-secondary"
             >
-              Annulla
+              Cancel
             </button>
             <button
               onClick={handleUpload}
               disabled={uploading}
               className="flex-1 py-3 rounded-lg bg-accent-green text-white font-medium disabled:opacity-60"
             >
-              {uploading ? 'Caricamento...' : 'Salva'}
+              {uploading ? 'Uploading...' : 'Save'}
             </button>
           </div>
         </div>
@@ -174,8 +174,8 @@ export function MomentsGrid({
       {groups.length === 0 ? (
         <div className="py-16 text-center">
           <span className="text-4xl opacity-40">📷</span>
-          <p className="text-text-tertiary mt-3 text-body">Nessun momento</p>
-          <p className="text-text-tertiary text-footnote mt-1">Aggiungi la prima foto o un album</p>
+          <p className="text-text-tertiary mt-3 text-body">No moments yet</p>
+          <p className="text-text-tertiary text-footnote mt-1">Add your first photo or album</p>
         </div>
       ) : (
         <div className="space-y-8">
@@ -214,7 +214,7 @@ export function MomentsGrid({
           setAddToAlbumFiles([]);
           addToAlbumInputRef.current && (addToAlbumInputRef.current.value = '');
         }}
-        title={addToAlbum ? `Aggiungi a "${addToAlbum.title || 'Album'}"` : undefined}
+        title={addToAlbum ? `Add to "${addToAlbum.title || 'Album'}"` : undefined}
       >
         {addToAlbum && (
           <AddToAlbumForm
@@ -306,7 +306,7 @@ function AddToAlbumForm({
         onClick={() => inputRef.current?.click()}
         className="w-full py-3 rounded-lg border-2 border-dashed border-accent-green/50 text-accent-green flex items-center justify-center gap-2"
       >
-        + Scegli foto
+        + Choose photos
       </button>
       {files.length > 0 && (
         <>
@@ -319,21 +319,21 @@ function AddToAlbumForm({
                   type="button"
                   onClick={() => setFiles(files.filter((_, j) => j !== i))}
                   className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/60 text-white text-sm flex items-center justify-center"
-                  aria-label="Rimuovi"
+                  aria-label="Remove"
                 >
                   ×
                 </button>
               </div>
             ))}
           </div>
-          <p className="text-footnote text-text-tertiary">{files.length} foto selezionate</p>
+          <p className="text-footnote text-text-tertiary">{files.length} photo(s) selected</p>
           <div className="flex gap-2">
             <button
               type="button"
               onClick={onCancel}
               className="flex-1 py-3 rounded-lg border border-[var(--separator)] text-text-secondary"
             >
-              Annulla
+              Cancel
             </button>
             <button
               type="button"
@@ -341,7 +341,7 @@ function AddToAlbumForm({
               disabled={uploading}
               className="flex-1 py-3 rounded-lg bg-accent-green text-white font-medium disabled:opacity-60"
             >
-              {uploading ? 'Caricamento...' : 'Aggiungi'}
+              {uploading ? 'Uploading...' : 'Add'}
             </button>
           </div>
         </>
@@ -375,20 +375,20 @@ function AlbumCard({
             onAddPhotos();
           }}
           className="absolute top-2 right-2 z-10 min-w-[44px] min-h-[44px] w-11 h-11 rounded-full bg-black/60 text-white flex items-center justify-center text-xl active:bg-black/80 transition-colors touch-manipulation"
-          aria-label="Aggiungi foto"
-          title="Aggiungi foto"
+          aria-label="Add photo"
+          title="Add photo"
         >
           +
         </button>
         {album.moments.length > 1 && (
           <div className="absolute bottom-2 right-2 bg-black/60 text-white text-footnote px-2 py-1 rounded">
-            {album.moments.length} foto
+            {album.moments.length} photos
           </div>
         )}
       </div>
       <div className="p-3">
         <p className="text-body text-text-primary line-clamp-1">
-          {album.title || `${album.moments.length} foto`}
+          {album.title || `${album.moments.length} photos`}
         </p>
         <p className="text-footnote text-text-tertiary mt-0.5">{formatDate(album.created_at)}</p>
       </div>
@@ -415,7 +415,7 @@ function Lightbox({
       <button
         onClick={onClose}
         className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white text-xl"
-        aria-label="Chiudi"
+        aria-label="Close"
       >
         ×
       </button>
@@ -483,7 +483,7 @@ function MomentCard({ moment, onClick }: { moment: MomentWithUrl; onClick: () =>
         {moment.caption ? (
           <p className="text-body text-text-primary line-clamp-2">{moment.caption}</p>
         ) : (
-          <p className="text-footnote text-text-tertiary italic">Senza titolo</p>
+          <p className="text-footnote text-text-tertiary italic">Untitled</p>
         )}
         <p className="text-footnote text-text-tertiary mt-1">{formatDate(moment.taken_at)}</p>
       </div>

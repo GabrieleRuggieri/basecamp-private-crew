@@ -230,23 +230,23 @@ export function TrainingSessionLogger({
     return (
       <div className="px-6 pb-8 space-y-4">
         <div className="card p-5 rounded-xl border-accent-red/30 border-2">
-          <p className="text-text-primary font-medium text-body mb-1">Sessione già in corso</p>
+          <p className="text-text-primary font-medium text-body mb-1">Session already in progress</p>
           <p className="text-text-secondary text-footnote">
-            Hai una sessione <strong>{otherLabel}</strong> attiva ({formatElapsed(blockedBy.elapsed)}). Annullala o completala prima di iniziare questo allenamento.
+            You have an active <strong>{otherLabel}</strong> session ({formatElapsed(blockedBy.elapsed)}). Cancel or complete it before starting this workout.
           </p>
         </div>
         <Link
           href={otherHref}
           className="btn w-full rounded-xl font-semibold flex items-center justify-center py-4 tap-target bg-accent-red text-white"
         >
-          Vai alla sessione {otherLabel}
+          Go to {otherLabel} session
         </Link>
         <button
           type="button"
           onClick={handleCancelOther}
           className="btn w-full rounded-xl font-medium flex items-center justify-center py-4 tap-target bg-surface-elevated text-text-secondary border border-[var(--card-border)]"
         >
-          Annulla sessione {otherLabel}
+          Cancel {otherLabel} session
         </button>
       </div>
     );
@@ -257,14 +257,14 @@ export function TrainingSessionLogger({
       <div className="flex flex-col items-center justify-center min-h-[50vh] px-6 text-center">
         {sessionError ? (
           <>
-            <p className="text-text-primary font-medium">Errore sessione</p>
+            <p className="text-text-primary font-medium">Session error</p>
             <p className="text-text-tertiary text-sm mt-2">
-              Esci e rientra con Simula NFC. Se il problema persiste, esegui
+              Leave and re-enter with Simulate NFC. If the issue persists, run
               supabase/04-reset-and-seed.sql
             </p>
           </>
         ) : (
-          <p className="text-text-tertiary">Caricamento...</p>
+          <p className="text-text-tertiary">Loading...</p>
         )}
       </div>
     );
@@ -273,7 +273,7 @@ export function TrainingSessionLogger({
   return (
     <div className="px-6 pb-8">
       <div className="card p-4 mb-6">
-        <p className="text-text-tertiary text-sm">Tempo</p>
+        <p className="text-text-tertiary text-sm">Time</p>
         <p className="text-3xl font-mono text-text-primary mt-1">
           {formatTime(elapsed)}
         </p>
@@ -281,14 +281,14 @@ export function TrainingSessionLogger({
 
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-text-primary font-medium">
-          {type === 'tricking' ? 'Mosse' : 'Serie'}
+          {type === 'tricking' ? 'Moves' : 'Sets'}
         </h2>
         <button
           onClick={addSet}
           className={cn('flex items-center gap-2 tap-target', `text-[var(--${accent})]`)}
         >
           <Plus size={20} />
-          <span>Aggiungi</span>
+          <span>Add</span>
         </button>
       </div>
 
@@ -297,7 +297,7 @@ export function TrainingSessionLogger({
           <div key={idx} className="card p-4 flex gap-3 items-center">
             <input
               type="text"
-              placeholder={type === 'tricking' ? 'Mossa' : 'Esercizio'}
+              placeholder={type === 'tricking' ? 'Move' : 'Exercise'}
               value={set.exercise}
               onChange={(e) => updateSet(idx, 'exercise', e.target.value)}
               className="flex-1 bg-transparent text-text-primary placeholder:text-text-tertiary border-b border-separator pb-2 focus:outline-none"
@@ -343,7 +343,7 @@ export function TrainingSessionLogger({
                     updateSet(idx, 'weight_kg', e.target.value ? parseFloat(e.target.value) : null)
                   }
                   className="w-14 bg-transparent text-text-primary placeholder:text-text-tertiary border-b border-separator pb-2 focus:outline-none text-center"
-                  title="Peso addosso (opzionale)"
+                  title="Added weight (optional)"
                 />
               </>
             )}
@@ -369,13 +369,13 @@ export function TrainingSessionLogger({
         onClick={handleCancel}
         className="btn w-full mt-3 rounded-xl font-medium flex items-center justify-center py-4 tap-target bg-surface-elevated text-text-secondary border border-[var(--card-border)]"
       >
-        Annulla sessione
+        Cancel session
       </button>
 
       <BottomSheet
         isOpen={showFinishSheet}
         onClose={() => !isFinishing && setShowFinishSheet(false)}
-        title="Come ti senti?"
+        title="How do you feel?"
       >
         <div className="space-y-6">
           {type === 'gym' && (() => {
@@ -384,7 +384,7 @@ export function TrainingSessionLogger({
             );
             return uniqueExercises.length > 0 ? (
               <div>
-                <label className="text-text-secondary text-sm block mb-2">PR (marca se hai fatto record)</label>
+                <label className="text-text-secondary text-sm block mb-2">PR (mark if you hit a record)</label>
                 <div className="flex flex-wrap gap-2">
                   {uniqueExercises.map((ex) => (
                     <label
@@ -437,7 +437,7 @@ export function TrainingSessionLogger({
             <textarea
               value={note}
               onChange={(e) => setNote(e.target.value)}
-              placeholder="Opzionale"
+              placeholder="Optional"
               className="w-full bg-surface-elevated rounded-button p-3 text-text-primary placeholder:text-text-tertiary border border-separator focus:outline-none focus:border-accent-red min-h-[80px]"
             />
           </div>
@@ -451,7 +451,7 @@ export function TrainingSessionLogger({
                 : 'bg-surface-elevated text-text-tertiary cursor-not-allowed'
             )}
           >
-            {isFinishing ? 'Salvataggio...' : 'Conferma'}
+            {isFinishing ? 'Saving...' : 'Confirm'}
           </button>
         </div>
       </BottomSheet>
@@ -460,7 +460,7 @@ export function TrainingSessionLogger({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80">
           <div className="text-center p-8">
             <p className="text-6xl mb-4">🎉</p>
-            <p className={cn('text-2xl font-bold', `text-[var(--${accent})]`)}>Nuovo PR!</p>
+            <p className={cn('text-2xl font-bold', `text-[var(--${accent})]`)}>New PR!</p>
             <p className="text-text-primary mt-2">{newPr}</p>
           </div>
         </div>

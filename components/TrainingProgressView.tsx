@@ -114,7 +114,7 @@ export function TrainingProgressView({
       {tab === 'prs' && !isRunning && type !== 'tricking' && (
         <div className="space-y-3">
           {prs.length === 0 ? (
-            <p className="text-text-tertiary text-center py-8">Nessun PR ancora</p>
+            <p className="text-text-tertiary text-center py-8">No PRs yet</p>
           ) : (
             prs.map((pr) => (
               <div key={pr.exercise} className="card p-4">
@@ -153,7 +153,7 @@ export function TrainingProgressView({
             <span className="text-4xl">⚡️</span>
           </div>
           <div className="card p-4 rounded-xl">
-            <p className="text-text-tertiary text-sm">Sessioni totali</p>
+            <p className="text-text-tertiary text-sm">Total sessions</p>
             <p className="text-2xl font-bold text-text-primary mt-1">{runHistory.sessions.length}</p>
           </div>
         </div>
@@ -163,9 +163,9 @@ export function TrainingProgressView({
       {tab === 'history' && !isRunning && (
         <div className="space-y-4">
           <div className="card p-4">
-            <h3 className="text-text-secondary text-sm mb-4">Sessioni</h3>
+            <h3 className="text-text-secondary text-sm mb-4">Sessions</h3>
             {history.sessions.length === 0 ? (
-              <p className="text-text-tertiary text-sm">Nessuna sessione</p>
+              <p className="text-text-tertiary text-sm">No sessions</p>
             ) : (
               <div className="space-y-2">
                 {history.sessions.map((s) => (
@@ -174,7 +174,7 @@ export function TrainingProgressView({
                     className="flex justify-between items-center py-2 border-b border-separator last:border-0"
                   >
                     <span className="text-text-primary text-sm">
-                      {new Date(s.date).toLocaleDateString('it-IT', {
+                      {new Date(s.date).toLocaleDateString('en-US', {
                         day: 'numeric',
                         month: 'short',
                         year: 'numeric',
@@ -190,7 +190,7 @@ export function TrainingProgressView({
           </div>
           {type !== 'tricking' && history.volumeByDate.length > 0 && (
             <div className="card p-4">
-              <h3 className="text-text-secondary text-sm mb-4">Volume per giorno</h3>
+              <h3 className="text-text-secondary text-sm mb-4">Volume per day</h3>
               <div className="h-48">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={history.volumeByDate}>
@@ -224,7 +224,7 @@ export function TrainingProgressView({
         <div className="space-y-4">
           {runHistory.sessions.length > 0 && (
             <div className="card p-4">
-              <h3 className="text-text-secondary text-sm mb-4">Km per sessione</h3>
+              <h3 className="text-text-secondary text-sm mb-4">Km per session</h3>
               <div className="h-48">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart
@@ -258,9 +258,9 @@ export function TrainingProgressView({
             </div>
           )}
           <div className="card p-4">
-            <h3 className="text-text-secondary text-sm mb-4">Sessioni</h3>
+            <h3 className="text-text-secondary text-sm mb-4">Sessions</h3>
             {runHistory.sessions.length === 0 ? (
-              <p className="text-text-tertiary text-sm">Nessuna sessione</p>
+              <p className="text-text-tertiary text-sm">No sessions</p>
             ) : (
               <div className="space-y-2">
                 {runHistory.sessions.map((s) => (
@@ -270,7 +270,7 @@ export function TrainingProgressView({
                   >
                     <div>
                       <span className="text-text-primary text-sm">
-                        {new Date(s.date).toLocaleDateString('it-IT', {
+                        {new Date(s.date).toLocaleDateString('en-US', {
                           day: 'numeric',
                           month: 'short',
                           year: 'numeric',
@@ -299,9 +299,9 @@ export function TrainingProgressView({
       {/* Crew */}
       {tab === 'crew' && (
         <div className="space-y-3">
-          <h3 className="text-text-secondary text-sm mb-2">Progressi crew</h3>
+          <h3 className="text-text-secondary text-sm mb-2">Crew progress</h3>
           {crew.length === 0 ? (
-            <p className="text-text-tertiary text-sm py-6 text-center">Nessun membro</p>
+            <p className="text-text-tertiary text-sm py-6 text-center">No members</p>
           ) : (
             crew.map((m) => (
               <div key={m.id} className="card p-4 rounded-xl">
@@ -310,7 +310,7 @@ export function TrainingProgressView({
                   <div className="flex-1 min-w-0">
                     <p className="text-subhead font-semibold text-text-primary">{m.name}</p>
                     <p className="text-footnote text-text-tertiary mt-0.5">
-                      {m.pr_count} PR · {m.sessions_count} sessioni
+                      {m.pr_count} PR · {m.sessions_count} sessions
                     </p>
                   </div>
                 </div>

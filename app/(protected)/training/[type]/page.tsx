@@ -17,9 +17,9 @@ const LABELS: Record<string, string> = {
 };
 
 const SUBTITLES: Record<string, string> = {
-  tricking: 'Parkour e acrobazie',
-  calisthenics: 'Esercizi a corpo libero',
-  running: 'Corsa con km e pace',
+  tricking: 'Parkour and acrobatics',
+  calisthenics: 'Bodyweight exercises',
+  running: 'Run with km and pace',
 };
 
 const SESSION_LABELS: Record<string, string> = {
@@ -62,7 +62,7 @@ export default async function TrainingTypePage({
         <div className="card p-5 rounded-xl">
           <p className="text-footnote text-text-tertiary">Streak</p>
           <p className="text-3xl font-bold text-text-primary mt-1">0</p>
-          <p className="text-caption text-text-tertiary mt-0.5">giorni consecutivi</p>
+          <p className="text-caption text-text-tertiary mt-0.5">consecutive days</p>
         </div>
 
         <Link
@@ -76,16 +76,16 @@ export default async function TrainingTypePage({
           <>
             <div className="card p-5 rounded-xl">
               <h3 className="text-subhead font-semibold text-text-primary mb-2">
-                Leaderboard settimana
+                Weekly leaderboard
               </h3>
-              <p className="text-footnote text-text-tertiary">Nessun dato ancora</p>
+              <p className="text-footnote text-text-tertiary">No data yet</p>
             </div>
 
             <div className="card p-5 rounded-xl">
               <h3 className="text-subhead font-semibold text-text-primary mb-2">
-                Ultime sessioni
+                Recent sessions
               </h3>
-              <p className="text-footnote text-text-tertiary">Nessuna sessione</p>
+              <p className="text-footnote text-text-tertiary">No sessions</p>
             </div>
           </>
         )}
