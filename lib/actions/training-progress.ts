@@ -1,14 +1,16 @@
 /**
  * Progress: PR e storico volume.
- * getGymPrs: personal records del membro ordinati per peso (filtrati per type).
+ * getGymPrs: personal records del membro autenticato ordinati per peso (filtrati per type).
  * getGymHistory: volume (kg×reps) per data, per grafico (filtrato per type).
  * getCrewProgress: lista crew con PR e sessioni per type (per sezione Crew in Progress).
+ * memberId viene sempre letto da getSession() — mai accettato dal client.
  */
 'use server';
 
 import { supabase } from '@/lib/supabase';
 import type { TrainingType } from '@/lib/actions/training';
 import { getCrewMembers } from '@/lib/actions/training-crew';
+import { getSession } from '@/lib/actions/auth';
 
 export type CrewProgressMember = {
   id: string;
@@ -52,11 +54,14 @@ export async function getCrewProgress(type: TrainingType): Promise<CrewProgressM
   }));
 }
 
-export async function getGymPrs(memberId: string, type: TrainingType = 'gym') {
+export async function getGymPrs(type: TrainingType = 'gym') {
+  const session = await getSession();
+  if (!session) return [];
+
   const { data } = await supabase
     .from('gym_prs')
     .select('exercise_name, weight_kg, reps')
-    .eq('member_id', memberId)
+    .eq('member_id', session.memberId)
     .eq('type', type)
     .order('achieved_at', { ascending: false });
 
@@ -67,11 +72,14 @@ export async function getGymPrs(memberId: string, type: TrainingType = 'gym') {
   }));
 }
 
-export async function getGymHistory(memberId: string, type: TrainingType = 'gym') {
+export async function getGymHistory(type: TrainingType = 'gym') {
+  const session = await getSession();
+  if (!session) return { volumeByDate: [], sessions: [] };
+
   const { data: sessions } = await supabase
     .from('gym_sessions')
     .select('id, started_at, duration_minutes')
-    .eq('member_id', memberId)
+    .eq('member_id', session.memberId)
     .eq('type', type)
     .not('ended_at', 'is', null)
     .order('started_at', { ascending: true });

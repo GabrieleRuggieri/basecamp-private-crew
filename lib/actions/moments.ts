@@ -3,12 +3,14 @@
  * getMoments: lista momenti/album del membro con signed URLs.
  * uploadMoment: singola foto.
  * uploadMomentAlbum: più foto in una cartella (album).
+ * memberId viene sempre letto da getSession() — mai accettato dal client.
  */
 'use server';
 
 import { revalidatePath } from 'next/cache';
 import { supabase } from '@/lib/supabase';
 import { createId } from '@/lib/utils';
+import { getSession } from '@/lib/actions/auth';
 
 const SIGNED_URL_EXPIRY = 60 * 60 * 24 * 365; // 1 anno
 
@@ -41,14 +43,17 @@ export async function getMoments(): Promise<MomentItem[]> {
 
   if (!moments?.length) return [];
 
-  const withUrls = await Promise.all(
-    moments.map(async (m) => {
-      const { data: signed } = await supabase.storage
-        .from('moments')
-        .createSignedUrl(m.storage_path, SIGNED_URL_EXPIRY);
-      return { ...m, imageUrl: signed?.signedUrl ?? null } as MomentWithUrl;
-    })
-  );
+  const paths = moments.map((m) => m.storage_path);
+  const { data: signedList } = await supabase.storage
+    .from('moments')
+    .createSignedUrls(paths, SIGNED_URL_EXPIRY);
+
+  const urlByPath = new Map((signedList ?? []).map((s) => [s.path, s.signedUrl]));
+
+  const withUrls = moments.map((m) => ({
+    ...m,
+    imageUrl: urlByPath.get(m.storage_path) ?? null,
+  })) as MomentWithUrl[];
 
   const albumIds = [...new Set(withUrls.map((m) => m.album_id).filter(Boolean))] as string[];
   const albumsMap = new Map<string, { member_id: string; title: string | null; created_at: string }>();
@@ -109,14 +114,17 @@ export async function getMoments(): Promise<MomentItem[]> {
   return result;
 }
 
-export async function uploadMoment(memberId: string, formData: FormData) {
+export async function uploadMoment(formData: FormData) {
+  const session = await getSession();
+  if (!session) throw new Error('Non autenticato');
+
   const file = formData.get('file') as File | null;
   if (!file || !file.type.startsWith('image/')) {
     throw new Error('Invalid file');
   }
 
   const ext = file.name.split('.').pop() || 'jpg';
-  const path = `${memberId}/${createId()}.${ext}`;
+  const path = `${session.memberId}/${createId()}.${ext}`;
 
   const buffer = await file.arrayBuffer();
 
@@ -135,7 +143,7 @@ export async function uploadMoment(memberId: string, formData: FormData) {
   const caption = (formData.get('caption') as string)?.trim() || null;
 
   const { error: insertError } = await supabase.from('moments').insert({
-    member_id: memberId,
+    member_id: session.memberId,
     storage_path: path,
     caption,
   });
@@ -148,7 +156,10 @@ export async function uploadMoment(memberId: string, formData: FormData) {
   revalidatePath('/home');
 }
 
-export async function uploadMomentAlbum(memberId: string, formData: FormData): Promise<void> {
+export async function uploadMomentAlbum(formData: FormData): Promise<void> {
+  const session = await getSession();
+  if (!session) throw new Error('Non autenticato');
+
   const files = formData.getAll('files') as File[];
   const validFiles = files.filter((f) => f && f.type?.startsWith('image/'));
   const title = (formData.get('title') as string)?.trim() || null;
@@ -157,7 +168,7 @@ export async function uploadMomentAlbum(memberId: string, formData: FormData): P
 
   const { data: album, error: albumError } = await supabase
     .from('moment_albums')
-    .insert({ member_id: memberId, title })
+    .insert({ member_id: session.memberId, title })
     .select('id')
     .single();
 
@@ -169,7 +180,7 @@ export async function uploadMomentAlbum(memberId: string, formData: FormData): P
   for (let i = 0; i < validFiles.length; i++) {
     const file = validFiles[i];
     const ext = file.name.split('.').pop() || 'jpg';
-    const path = `${memberId}/${createId()}.${ext}`;
+    const path = `${session.memberId}/${createId()}.${ext}`;
     const buffer = await file.arrayBuffer();
 
     const { error: uploadError } = await supabase.storage
@@ -185,7 +196,7 @@ export async function uploadMomentAlbum(memberId: string, formData: FormData): P
     }
 
     const { error: insertError } = await supabase.from('moments').insert({
-      member_id: memberId,
+      member_id: session.memberId,
       album_id: album.id,
       position: i,
       storage_path: path,
@@ -202,10 +213,12 @@ export async function uploadMomentAlbum(memberId: string, formData: FormData): P
 }
 
 export async function addPhotosToAlbum(
-  memberId: string,
   albumId: string,
   formData: FormData
 ): Promise<void> {
+  const session = await getSession();
+  if (!session) throw new Error('Non autenticato');
+
   const files = formData.getAll('files') as File[];
   const validFiles = files.filter((f) => f && f.type?.startsWith('image/'));
   if (validFiles.length === 0) throw new Error('Nessuna immagine valida');
@@ -215,7 +228,7 @@ export async function addPhotosToAlbum(
     .select('member_id')
     .eq('id', albumId)
     .single();
-  if (!album || album.member_id !== memberId) {
+  if (!album || album.member_id !== session.memberId) {
     throw new Error('Non puoi aggiungere foto a questo album');
   }
 
@@ -231,7 +244,7 @@ export async function addPhotosToAlbum(
   for (let i = 0; i < validFiles.length; i++) {
     const file = validFiles[i];
     const ext = file.name.split('.').pop() || 'jpg';
-    const path = `${memberId}/${createId()}.${ext}`;
+    const path = `${session.memberId}/${createId()}.${ext}`;
     const buffer = await file.arrayBuffer();
 
     const { error: uploadError } = await supabase.storage
@@ -247,7 +260,7 @@ export async function addPhotosToAlbum(
     }
 
     const { error: insertError } = await supabase.from('moments').insert({
-      member_id: memberId,
+      member_id: session.memberId,
       album_id: albumId,
       position: startPosition + i,
       storage_path: path,

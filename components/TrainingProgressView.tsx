@@ -28,10 +28,8 @@ const ACCENT_BY_TYPE: Record<TrainingType, string> = {
 };
 
 export function TrainingProgressView({
-  memberId,
   type = 'gym',
 }: {
-  memberId: string;
   type?: TrainingType;
 }) {
   const [tab, setTab] = useState<Tab>(type === 'tricking' ? 'history' : 'prs');
@@ -46,10 +44,10 @@ export function TrainingProgressView({
   const accent = ACCENT_BY_TYPE[type];
 
   useEffect(() => {
-    getGymPrs(memberId, type).then(setPrs);
-    getGymHistory(memberId, type).then(setHistory);
+    getGymPrs(type).then(setPrs);
+    getGymHistory(type).then(setHistory);
     getCrewProgress(type).then(setCrew);
-  }, [memberId, type]);
+  }, [type]);
 
   useEffect(() => {
     if (type === 'tricking' && tab === 'prs') setTab('history');

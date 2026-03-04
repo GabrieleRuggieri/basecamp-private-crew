@@ -2,7 +2,6 @@
  * Progress: grafico volume, lista PR.
  * Supporta gym, tricking, calisthenics.
  */
-import { getSession } from '@/lib/actions/auth';
 import { TrainingProgressView } from '@/components/TrainingProgressView';
 import { BackButton } from '@/components/BackButton';
 import { notFound } from 'next/navigation';
@@ -17,9 +16,6 @@ export default async function TrainingProgressPage({
   const { type } = await params;
   if (!isValidTrainingType(type)) notFound();
 
-  const session = await getSession();
-  if (!session) return null;
-
   return (
     <main className="min-h-dvh">
       <header className="flex items-center gap-3 px-5 pt-4 pb-2 safe-area-top">
@@ -32,7 +28,7 @@ export default async function TrainingProgressPage({
         </h1>
       </header>
 
-      <TrainingProgressView memberId={session.memberId} type={type as TrainingType} />
+      <TrainingProgressView type={type as TrainingType} />
     </main>
   );
 }

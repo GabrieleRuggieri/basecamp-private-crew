@@ -34,7 +34,7 @@ export default async function ThoughtsPage({
       </header>
 
       <div className="px-5 pb-8">
-        <AddThoughtForm memberId={session.memberId} />
+        <AddThoughtForm />
         <ThoughtTagFilter currentTag={filterTag} />
         <ThoughtsFeed thoughts={thoughts} currentMemberId={session.memberId} reactionsMap={reactionsMap} />
       </div>

@@ -1,15 +1,11 @@
 /**
  * Travels: lista viaggi (visited/wishlist) con form add.
  */
-import { getSession } from '@/lib/actions/auth';
 import { getTravels } from '@/lib/actions/travels';
 import { TravelsView } from './TravelsView';
 
 export default async function TravelsPage() {
-  const session = await getSession();
-  if (!session) return null;
-
-  const travels = await getTravels(session.memberId);
+  const travels = await getTravels();
 
   return (
     <main className="min-h-dvh">
@@ -19,10 +15,7 @@ export default async function TravelsPage() {
         </h1>
       </header>
 
-      <TravelsView
-        travels={travels}
-        memberId={session.memberId}
-      />
+      <TravelsView travels={travels} />
     </main>
   );
 }

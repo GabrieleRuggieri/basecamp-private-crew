@@ -233,7 +233,7 @@ export function CrewMemberCardWithSessions({
         <div className="flex-1 min-w-0">
           <p className="text-subhead font-semibold text-text-primary">{member.name}</p>
           <p className="text-footnote text-text-tertiary mt-0.5">
-            Streak: {member.streak ?? 0} · PR: {member.pr_count ?? 0} · Sessioni: {member.sessions_count ?? 0}
+            PR: {member.pr_count ?? 0} · Sessioni: {member.sessions_count ?? 0}
           </p>
         </div>
       </div>

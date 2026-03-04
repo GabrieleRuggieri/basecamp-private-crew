@@ -1,5 +1,5 @@
 /**
- * Crew: lista membri con streak, PR count e sessioni.
+ * Crew: lista membri con PR count e sessioni.
  * getCrewMembers: membri attivi con stats (per Progress).
  * getCrewMembersWithSessions: membri con ultime N sessioni e set (per Crew page).
  */
@@ -12,7 +12,6 @@ export type CrewMemberWithStats = {
   id: string;
   name: string;
   emoji: string;
-  streak: number;
   pr_count: number;
   sessions_count: number;
 };
@@ -70,7 +69,6 @@ export async function getCrewMembers(type: TrainingType = 'gym'): Promise<CrewMe
 
   return members.map((m) => ({
     ...m,
-    streak: 0,
     pr_count: prCountByMember.get(m.id) ?? 0,
     sessions_count: sessionsCountByMember.get(m.id) ?? 0,
   }));
@@ -83,54 +81,58 @@ export async function getCrewMembersWithSessions(
   const members = await getCrewMembers(type);
   if (members.length === 0) return [];
 
-  const result = await Promise.all(
-    members.map(async (m) => {
-      const { data: sessions } = await supabase
-        .from('gym_sessions')
-        .select('id, started_at, ended_at, duration_minutes, mood')
-        .eq('member_id', m.id)
-        .eq('type', type)
-        .not('ended_at', 'is', null)
-        .order('ended_at', { ascending: false })
-        .limit(maxSessionsPerMember);
+  const memberIds = members.map((m) => m.id);
 
-      const sessionIds = (sessions ?? []).map((s) => s.id);
-      let setsBySession = new Map<string, { exercise_name: string; weight_kg: number | null; reps: number | null }[]>();
+  const { data: allSessions } = await supabase
+    .from('gym_sessions')
+    .select('id, member_id, started_at, ended_at, duration_minutes, mood')
+    .in('member_id', memberIds)
+    .eq('type', type)
+    .not('ended_at', 'is', null)
+    .order('ended_at', { ascending: false });
 
-      if (sessionIds.length > 0) {
-        const { data: allSets } = await supabase
-          .from('gym_sets')
-          .select('session_id, exercise_name, weight_kg, reps, set_number')
-          .in('session_id', sessionIds)
-          .order('set_number');
+  // Keep only the most recent maxSessionsPerMember sessions per member
+  const sessionsByMember = new Map<string, typeof allSessions>(memberIds.map((id) => [id, []]));
+  for (const s of allSessions ?? []) {
+    const list = sessionsByMember.get(s.member_id) ?? [];
+    if (list.length < maxSessionsPerMember) {
+      list.push(s);
+      sessionsByMember.set(s.member_id, list);
+    }
+  }
 
-        for (const x of allSets ?? []) {
-          const list = setsBySession.get(x.session_id) ?? [];
-          list.push({
-            exercise_name: x.exercise_name,
-            weight_kg: x.weight_kg,
-            reps: x.reps,
-          });
-          setsBySession.set(x.session_id, list);
-        }
-      }
+  const keptSessionIds = [...sessionsByMember.values()].flat().map((s) => s!.id);
 
-      const sessionsWithSets: CrewSessionWithSets[] = (sessions ?? []).map((s) => ({
-        id: s.id,
-        started_at: s.started_at,
-        ended_at: s.ended_at,
-        duration_minutes: s.duration_minutes,
-        mood: s.mood,
-        sets: setsBySession.get(s.id) ?? [],
-      }));
+  const setsBySession = new Map<string, { exercise_name: string; weight_kg: number | null; reps: number | null }[]>();
 
-      return {
-        ...m,
-        sessions: sessionsWithSets,
-        sessions_total: sessionsWithSets.length,
-      };
-    })
-  );
+  if (keptSessionIds.length > 0) {
+    const { data: allSets } = await supabase
+      .from('gym_sets')
+      .select('session_id, exercise_name, weight_kg, reps, set_number')
+      .in('session_id', keptSessionIds)
+      .order('set_number');
 
-  return result;
+    for (const x of allSets ?? []) {
+      const list = setsBySession.get(x.session_id) ?? [];
+      list.push({ exercise_name: x.exercise_name, weight_kg: x.weight_kg, reps: x.reps });
+      setsBySession.set(x.session_id, list);
+    }
+  }
+
+  return members.map((m) => {
+    const sessions = (sessionsByMember.get(m.id) ?? []).map((s) => ({
+      id: s!.id,
+      started_at: s!.started_at,
+      ended_at: s!.ended_at,
+      duration_minutes: s!.duration_minutes,
+      mood: s!.mood,
+      sets: setsBySession.get(s!.id) ?? [],
+    })) as CrewSessionWithSets[];
+
+    return {
+      ...m,
+      sessions,
+      sessions_total: sessions.length,
+    };
+  });
 }

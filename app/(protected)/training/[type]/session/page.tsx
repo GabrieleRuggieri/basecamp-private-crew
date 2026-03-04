@@ -2,7 +2,6 @@
  * Training session: timer, serie, Finish con mood picker.
  * Supporta gym, tricking, calisthenics.
  */
-import { getSession } from '@/lib/actions/auth';
 import { TrainingSessionLogger } from '@/components/TrainingSessionLogger';
 import { BackButton } from '@/components/BackButton';
 import { notFound } from 'next/navigation';
@@ -23,9 +22,6 @@ export default async function TrainingSessionPage({
   const { type } = await params;
   if (!isValidTrainingType(type)) notFound();
 
-  const session = await getSession();
-  if (!session) return null;
-
   return (
     <main className="min-h-dvh">
       <header className="flex items-center gap-3 px-5 pt-4 pb-2 safe-area-top">
@@ -39,7 +35,6 @@ export default async function TrainingSessionPage({
       </header>
 
       <TrainingSessionLogger
-        memberId={session.memberId}
         type={type as TrainingType}
         backHref={`/training/${type}`}
       />

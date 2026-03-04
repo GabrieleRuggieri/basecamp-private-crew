@@ -24,10 +24,8 @@ const TYPE_CONFIG: Record<string, { label: string; icon: typeof Film }> = {
 
 export function WatchlistView({
   items,
-  memberId,
 }: {
   items: WatchlistItem[];
-  memberId: string;
 }) {
   const router = useRouter();
   const [tab, setTab] = useState<Status>('want');
@@ -45,10 +43,10 @@ export function WatchlistView({
     if (!title.trim()) return;
     const itemType = type === 'all' ? 'movie' : (type as 'movie' | 'series' | 'book' | 'podcast' | 'other');
     if (editingItem) {
-      await updateWatchlistItem(editingItem.id, memberId, title.trim(), itemType);
+      await updateWatchlistItem(editingItem.id, title.trim(), itemType);
       setEditingItem(null);
     } else {
-      await addWatchlistItem(memberId, title.trim(), itemType, 'want');
+      await addWatchlistItem(title.trim(), itemType, 'want');
     }
     setTitle('');
     setType('movie');

@@ -4,22 +4,26 @@
  * addGymSet: aggiunge una serie (esercizio, kg, reps).
  * finishGymSession: chiude la sessione con mood e note, controlla PR.
  * checkForPr: verifica se è un nuovo personal record.
+ * memberId viene sempre letto da getSession() — mai accettato dal client.
  */
 'use server';
 
 import { revalidatePath } from 'next/cache';
 import { supabase } from '@/lib/supabase';
+import { getSession } from '@/lib/actions/auth';
 
 export type TrainingType = 'gym' | 'tricking' | 'calisthenics';
 
 export async function addGymSession(
-  memberId: string,
   type: TrainingType = 'gym'
 ): Promise<string | null> {
+  const session = await getSession();
+  if (!session) return null;
+
   const { data, error } = await supabase
     .from('gym_sessions')
     .insert({
-      member_id: memberId,
+      member_id: session.memberId,
       type,
       started_at: new Date().toISOString(),
     })
@@ -35,15 +39,27 @@ export async function addGymSession(
 
 export async function addGymSet(
   sessionId: string,
-  memberId: string,
   exercise: string,
   weightKg: number | null,
   reps: number | null,
   setNumber: number
 ) {
+  const session = await getSession();
+  if (!session) return;
+
+  // Verify the session belongs to the authenticated member before inserting
+  const { data: gymSession } = await supabase
+    .from('gym_sessions')
+    .select('id')
+    .eq('id', sessionId)
+    .eq('member_id', session.memberId)
+    .single();
+
+  if (!gymSession) return;
+
   const { error } = await supabase.from('gym_sets').insert({
     session_id: sessionId,
-    member_id: memberId,
+    member_id: session.memberId,
     exercise_name: exercise,
     weight_kg: weightKg,
     reps,
@@ -62,12 +78,14 @@ const MOOD_EMOJI_TO_INT: Record<string, number> = {
 
 export async function finishGymSession(
   sessionId: string,
-  memberId: string,
   moodEmoji: string,
   note: string,
   durationMinutes: number,
   prExercises: string[] = []
 ): Promise<{ exercise: string } | null> {
+  const authSession = await getSession();
+  if (!authSession) return null;
+
   const moodInt = MOOD_EMOJI_TO_INT[moodEmoji] ?? 3;
 
   const { data: session } = await supabase
@@ -79,6 +97,7 @@ export async function finishGymSession(
       duration_minutes: durationMinutes,
     })
     .eq('id', sessionId)
+    .eq('member_id', authSession.memberId)
     .select('member_id, type')
     .single();
 

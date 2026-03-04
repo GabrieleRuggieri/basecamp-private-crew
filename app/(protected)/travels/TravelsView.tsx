@@ -22,10 +22,8 @@ type Filter = 'visited' | 'wishlist';
 
 export function TravelsView({
   travels,
-  memberId,
 }: {
   travels: Travel[];
-  memberId: string;
 }) {
   const router = useRouter();
   const [filter, setFilter] = useState<Filter>('visited');
@@ -43,7 +41,7 @@ export function TravelsView({
   const handleAdd = async () => {
     if (!title.trim() || !location.trim()) return;
     if (editingTravel) {
-      await updateTravel(editingTravel.id, memberId, {
+      await updateTravel(editingTravel.id, {
         title: title.trim(),
         location: location.trim(),
         country_emoji: countryEmoji.trim() || null,
@@ -54,7 +52,6 @@ export function TravelsView({
       setEditingTravel(null);
     } else {
       await addTravel(
-        memberId,
         title.trim(),
         location.trim(),
         countryEmoji.trim() || null,

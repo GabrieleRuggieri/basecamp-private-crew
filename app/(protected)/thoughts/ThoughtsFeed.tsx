@@ -95,7 +95,7 @@ function ThoughtCard({
   async function handleSaveEdit() {
     if (!editContent.trim() || isSubmitting) return;
     setIsSubmitting(true);
-    await updateThought(thought.id, currentMemberId, editContent.trim(), editTags, editAnonymous);
+    await updateThought(thought.id, editContent.trim(), editTags, editAnonymous);
     setIsEditing(false);
     router.refresh();
     setIsSubmitting(false);

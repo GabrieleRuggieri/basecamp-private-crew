@@ -39,10 +39,8 @@ function formatDate(iso: string) {
 
 export function MomentsGrid({
   moments,
-  memberId,
 }: {
   moments: MomentItem[];
-  memberId: string;
 }) {
   const router = useRouter();
   const [uploading, setUploading] = useState(false);
@@ -81,13 +79,13 @@ export function MomentsGrid({
         const formData = new FormData();
         formData.set('file', resized);
         formData.set('caption', caption);
-        await uploadMoment(memberId, formData);
+        await uploadMoment(formData);
       } else {
         const resized = await Promise.all(files.map((f) => resizeImageForUpload(f)));
         const formData = new FormData();
         resized.forEach((f) => formData.append('files', f));
         formData.set('title', caption);
-        await uploadMomentAlbum(memberId, formData);
+        await uploadMomentAlbum(formData);
       }
       setPreviewFiles([]);
       setCaption('');
@@ -288,7 +286,7 @@ function AddToAlbumForm({
       const resized = await Promise.all(files.map((f) => resizeImageForUpload(f)));
       const formData = new FormData();
       resized.forEach((f) => formData.append('files', f));
-      await addPhotosToAlbum(memberId, albumId, formData);
+      await addPhotosToAlbum(albumId, formData);
       onSuccess();
     } catch (err) {
       console.error(err);

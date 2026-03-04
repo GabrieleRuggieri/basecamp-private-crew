@@ -1,6 +1,6 @@
 /**
  * Configurazione iron-session per la sessione utente.
- * Cookie criptato, TTL 30 giorni, httpOnly per sicurezza.
+ * Cookie criptato, TTL 1 ora, httpOnly per sicurezza.
  */
 import type { SessionOptions } from 'iron-session';
 import type { BasecampSession } from './types';

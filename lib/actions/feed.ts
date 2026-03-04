@@ -181,15 +181,32 @@ export async function getUnifiedFeed() {
   }
   momentItems.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
+  const topMomentItems = momentItems.slice(0, 10);
+
+  const pathsToSign: string[] = [];
+  for (const item of topMomentItems) {
+    if (item.type === 'album') {
+      const a = item.data as { id: string };
+      const first = firstByAlbum.get(a.id);
+      if (first) pathsToSign.push(first.storage_path);
+    } else {
+      const m = item.data as { storage_path: string };
+      pathsToSign.push(m.storage_path);
+    }
+  }
+
+  const { data: signedList } = pathsToSign.length > 0
+    ? await supabase.storage.from('moments').createSignedUrls(pathsToSign, SIGNED_URL_EXPIRY)
+    : { data: [] };
+
+  const urlByPath = new Map((signedList ?? []).map((s) => [s.path, s.signedUrl]));
+
   const moments: FeedItem[] = [];
-  for (const item of momentItems.slice(0, 10)) {
+  for (const item of topMomentItems) {
     if (item.type === 'album') {
       const a = item.data as { id: string; member_id: string; title: string | null; created_at: string };
       const first = firstByAlbum.get(a.id);
-      const imageUrl = first
-        ? (await supabase.storage.from('moments').createSignedUrl(first.storage_path, SIGNED_URL_EXPIRY)).data
-            ?.signedUrl ?? null
-        : null;
+      const imageUrl = first ? (urlByPath.get(first.storage_path) ?? null) : null;
       const count = albumCounts.get(a.id) ?? 0;
       moments.push({
         id: a.id,
@@ -201,16 +218,13 @@ export async function getUnifiedFeed() {
       });
     } else {
       const m = item.data as { id: string; member_id: string; storage_path: string; caption: string | null; taken_at: string };
-      const { data: signed } = await supabase.storage
-        .from('moments')
-        .createSignedUrl(m.storage_path, SIGNED_URL_EXPIRY);
       moments.push({
         id: m.id,
         type: 'moment',
         created_at: m.taken_at,
         author: memberMap.get(m.member_id),
         content: m.caption ?? undefined,
-        payload: { imageUrl: signed?.signedUrl ?? null },
+        payload: { imageUrl: urlByPath.get(m.storage_path) ?? null },
       });
     }
   }

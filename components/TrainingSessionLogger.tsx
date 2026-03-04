@@ -39,11 +39,9 @@ const ACCENT_BY_TYPE: Record<TrainingType, string> = {
 };
 
 export function TrainingSessionLogger({
-  memberId,
   type = 'gym',
   backHref = '/training/gym',
 }: {
-  memberId: string;
   type?: TrainingType;
   backHref?: string;
 }) {
@@ -63,11 +61,11 @@ export function TrainingSessionLogger({
 
   // Create session on mount
   useEffect(() => {
-    addGymSession(memberId, type).then((id) => {
+    addGymSession(type).then((id) => {
       if (id) setSessionId(id);
       else setSessionError(true);
     });
-  }, [memberId, type]);
+  }, [type]);
 
   // Timer: si ferma quando si apre il sheet Finish
   useEffect(() => {
@@ -104,7 +102,7 @@ export function TrainingSessionLogger({
     for (let i = 0; i < sets.length; i++) {
       const set = sets[i];
       if (set.exercise.trim()) {
-        await addGymSet(sessionId, memberId, set.exercise, set.weight_kg, set.reps, i + 1);
+        await addGymSet(sessionId, set.exercise, set.weight_kg, set.reps, i + 1);
       }
     }
 
@@ -112,7 +110,6 @@ export function TrainingSessionLogger({
     const prList = type === 'gym' ? prExercises : [];
     const prResult = await finishGymSession(
       sessionId,
-      memberId,
       mood!,
       note,
       durationMinutes,

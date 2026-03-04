@@ -3,9 +3,11 @@
  * getSession: legge la sessione dal cookie (memberId, name, emoji, role).
  * Se il membro non esiste più nel DB (rimosso, reset) → redirect a /api/logout
  * che cancella il cookie e porta alla landing. Evita foreign key error.
+ * React cache() deduplicata la query DB all'interno della stessa request.
  */
 'use server';
 
+import { cache } from 'react';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { getIronSession } from 'iron-session';
@@ -13,7 +15,7 @@ import { sessionOptions } from '@/lib/session';
 import { supabase } from '@/lib/supabase';
 import type { BasecampSession } from '@/lib/types';
 
-export async function getSession(): Promise<BasecampSession | null> {
+export const getSession = cache(async (): Promise<BasecampSession | null> => {
   const cookieStore = await cookies();
   const ironSession = await getIronSession<{ user?: BasecampSession }>(
     cookieStore,
@@ -39,4 +41,4 @@ export async function getSession(): Promise<BasecampSession | null> {
     emoji: data.emoji,
     role: data.role,
   };
-}
+});

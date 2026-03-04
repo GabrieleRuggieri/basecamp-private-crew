@@ -15,7 +15,7 @@ const THOUGHT_TAGS: { value: ThoughtTag; label: string }[] = [
   { value: 'proposta', label: 'Proposta' },
 ];
 
-export function AddThoughtForm({ memberId }: { memberId: string }) {
+export function AddThoughtForm() {
   const router = useRouter();
   const [content, setContent] = useState('');
   const [tags, setTags] = useState<ThoughtTag[]>([]);
@@ -32,7 +32,7 @@ export function AddThoughtForm({ memberId }: { memberId: string }) {
     e.preventDefault();
     if (!content.trim() || isSubmitting) return;
     setIsSubmitting(true);
-    await addThought(memberId, content.trim(), tags, anonymous);
+    await addThought(content.trim(), tags, anonymous);
     setContent('');
     setTags([]);
     router.refresh();

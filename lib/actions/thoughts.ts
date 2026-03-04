@@ -2,11 +2,13 @@
  * Server Actions per Thoughts (pensieri).
  * getThoughts: lista pensieri con autore e tags, opzionale filtro per tag.
  * addThought: crea pensiero con tags (side_quest, riflessione, proposta).
+ * memberId viene sempre letto da getSession() — mai accettato dal client.
  */
 'use server';
 
 import { revalidatePath } from 'next/cache';
 import { supabase } from '@/lib/supabase';
+import { getSession } from '@/lib/actions/auth';
 
 export type ThoughtTag = 'side_quest' | 'riflessione' | 'proposta';
 
@@ -55,15 +57,17 @@ export async function getThoughts(filterTag?: ThoughtTag | null) {
 }
 
 export async function addThought(
-  memberId: string,
   content: string,
   tags: ThoughtTag[],
   anonymous: boolean
 ) {
+  const session = await getSession();
+  if (!session) return;
+
   const { data: thought, error: thoughtError } = await supabase
     .from('thoughts')
     .insert({
-      member_id: memberId,
+      member_id: session.memberId,
       content,
       is_anonymous: anonymous,
     })
@@ -87,22 +91,18 @@ export async function addThought(
 
 export async function updateThought(
   thoughtId: string,
-  memberId: string,
   content: string,
   tags: ThoughtTag[],
   anonymous: boolean
 ) {
-  const { data: existing } = await supabase
-    .from('thoughts')
-    .select('member_id')
-    .eq('id', thoughtId)
-    .single();
-  if (!existing || existing.member_id !== memberId) return;
+  const session = await getSession();
+  if (!session) return;
 
   const { error: thoughtError } = await supabase
     .from('thoughts')
     .update({ content, is_anonymous: anonymous })
-    .eq('id', thoughtId);
+    .eq('id', thoughtId)
+    .eq('member_id', session.memberId);
 
   if (thoughtError) {
     console.error('updateThought', thoughtError);

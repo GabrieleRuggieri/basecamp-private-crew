@@ -1,25 +1,29 @@
 /**
  * Server Actions per Travels (viaggi).
- * getTravels: lista viaggi del membro (visited/wishlist).
+ * getTravels: lista viaggi del membro autenticato (visited/wishlist).
  * addTravel: aggiunge un viaggio, revalida /travels.
+ * memberId viene sempre letto da getSession() — mai accettato dal client.
  */
 'use server';
 
 import { revalidatePath } from 'next/cache';
 import { supabase } from '@/lib/supabase';
+import { getSession } from '@/lib/actions/auth';
 
-export async function getTravels(memberId: string) {
+export async function getTravels() {
+  const session = await getSession();
+  if (!session) return [];
+
   const { data } = await supabase
     .from('travels')
     .select('id, member_id, title, location, country_emoji, status, year, note')
-    .eq('member_id', memberId)
+    .eq('member_id', session.memberId)
     .order('created_at', { ascending: false });
 
   return data ?? [];
 }
 
 export async function addTravel(
-  memberId: string,
   title: string,
   location: string,
   countryEmoji: string | null,
@@ -27,8 +31,11 @@ export async function addTravel(
   year: number | null,
   note: string | null
 ) {
+  const session = await getSession();
+  if (!session) return;
+
   const { error } = await supabase.from('travels').insert({
-    member_id: memberId,
+    member_id: session.memberId,
     title,
     location,
     country_emoji: countryEmoji,
@@ -42,7 +49,6 @@ export async function addTravel(
 
 export async function updateTravel(
   travelId: string,
-  memberId: string,
   data: {
     title: string;
     location: string;
@@ -52,12 +58,8 @@ export async function updateTravel(
     note: string | null;
   }
 ) {
-  const { data: existing } = await supabase
-    .from('travels')
-    .select('member_id')
-    .eq('id', travelId)
-    .single();
-  if (!existing || existing.member_id !== memberId) return;
+  const session = await getSession();
+  if (!session) return;
 
   const { error } = await supabase
     .from('travels')
@@ -69,7 +71,8 @@ export async function updateTravel(
       year: data.year,
       note: data.note,
     })
-    .eq('id', travelId);
+    .eq('id', travelId)
+    .eq('member_id', session.memberId);
 
   if (error) console.error('updateTravel', error);
   else {
