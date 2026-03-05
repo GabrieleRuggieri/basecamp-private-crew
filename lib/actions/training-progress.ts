@@ -1,8 +1,7 @@
 /**
- * Progress: PR e storico volume.
- * getGymPrs: personal records del membro autenticato ordinati per peso (filtrati per type).
+ * Progress: storico volume e crew.
  * getGymHistory: volume (kg×reps) per data, per grafico (filtrato per type).
- * getCrewProgress: lista crew con PR e sessioni per type (per sezione Crew in Progress).
+ * getCrewProgress: lista crew con sessioni per type (per sezione Crew in Progress).
  * memberId viene sempre letto da getSession() — mai accettato dal client.
  */
 'use server';
@@ -10,69 +9,20 @@
 import { supabase } from '@/lib/supabase';
 import type { TrainingType } from '@/lib/actions/training';
 import { getCrewMembers } from '@/lib/actions/training-crew';
-import { getSession } from '@/lib/actions/auth';
 
 export type CrewProgressMember = {
   id: string;
   name: string;
   emoji: string;
-  pr_count: number;
   sessions_count: number;
-  prs: { exercise: string; weight_kg: number | null; reps: number | null }[];
 };
 
 export async function getCrewProgress(type: TrainingType): Promise<CrewProgressMember[]> {
-  const crew = await getCrewMembers(type);
-  if (crew.length === 0) return [];
-
-  const memberIds = crew.map((m) => m.id);
-  const { data: allPrs } = await supabase
-    .from('gym_prs')
-    .select('member_id, exercise_name, weight_kg, reps, achieved_at')
-    .in('member_id', memberIds)
-    .eq('type', type)
-    .order('achieved_at', { ascending: false });
-
-  const prsByMember = new Map<string, { exercise: string; weight_kg: number | null; reps: number | null }[]>();
-  for (const r of allPrs ?? []) {
-    const list = prsByMember.get(r.member_id) ?? [];
-    list.push({
-      exercise: r.exercise_name,
-      weight_kg: r.weight_kg,
-      reps: r.reps,
-    });
-    prsByMember.set(r.member_id, list);
-  }
-
-  return crew.map((m) => ({
-    id: m.id,
-    name: m.name,
-    emoji: m.emoji,
-    pr_count: m.pr_count,
-    sessions_count: m.sessions_count,
-    prs: prsByMember.get(m.id) ?? [],
-  }));
-}
-
-export async function getGymPrs(type: TrainingType = 'gym') {
-  const session = await getSession();
-  if (!session) return [];
-
-  const { data } = await supabase
-    .from('gym_prs')
-    .select('exercise_name, weight_kg, reps')
-    .eq('member_id', session.memberId)
-    .eq('type', type)
-    .order('achieved_at', { ascending: false });
-
-  return (data ?? []).map((r) => ({
-    exercise: r.exercise_name,
-    weight_kg: r.weight_kg,
-    reps: r.reps,
-  }));
+  return getCrewMembers(type);
 }
 
 export async function getGymHistory(type: TrainingType = 'gym') {
+  const { getSession } = await import('@/lib/actions/auth');
   const session = await getSession();
   if (!session) return { volumeByDate: [], sessions: [] };
 

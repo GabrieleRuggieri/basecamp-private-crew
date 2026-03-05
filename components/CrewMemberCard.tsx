@@ -51,7 +51,7 @@ export function CrewMemberCard({
         <div className="flex-1 min-w-0">
           <p className="text-subhead font-semibold text-text-primary">{member.name}</p>
           <p className="text-footnote text-text-tertiary mt-0.5">
-            PR: {member.pr_count ?? 0} · Sessions: {member.sessions_count ?? 0}
+            {member.sessions_count ?? 0} sessions
           </p>
 
           <div className="flex gap-2 mt-2 flex-wrap">

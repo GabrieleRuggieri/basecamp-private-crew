@@ -1,6 +1,6 @@
 /**
- * Crew: lista membri con PR count e sessioni.
- * getCrewMembers: membri attivi con stats (per Progress).
+ * Crew: lista membri con sessioni.
+ * getCrewMembers: membri attivi con session count (per Progress).
  * getCrewMembersWithSessions: membri con ultime N sessioni e set (per Crew page).
  */
 'use server';
@@ -12,7 +12,6 @@ export type CrewMemberWithStats = {
   id: string;
   name: string;
   emoji: string;
-  pr_count: number;
   sessions_count: number;
 };
 
@@ -40,36 +39,21 @@ export async function getCrewMembers(type: TrainingType = 'gym'): Promise<CrewMe
 
   const memberIds = members.map((m) => m.id);
 
-  const [prRes, sessionsRes] = await Promise.all([
-    supabase
-      .from('gym_prs')
-      .select('member_id')
-      .in('member_id', memberIds)
-      .eq('type', type),
-    supabase
-      .from('gym_sessions')
-      .select('member_id')
-      .in('member_id', memberIds)
-      .eq('type', type)
-      .not('ended_at', 'is', null),
-  ]);
+  const { data: sessionsRes } = await supabase
+    .from('gym_sessions')
+    .select('member_id')
+    .in('member_id', memberIds)
+    .eq('type', type)
+    .not('ended_at', 'is', null);
 
-  const prCountByMember = new Map<string, number>();
   const sessionsCountByMember = new Map<string, number>();
-  for (const id of memberIds) {
-    prCountByMember.set(id, 0);
-    sessionsCountByMember.set(id, 0);
-  }
-  for (const row of prRes.data ?? []) {
-    prCountByMember.set(row.member_id, (prCountByMember.get(row.member_id) ?? 0) + 1);
-  }
-  for (const row of sessionsRes.data ?? []) {
+  for (const id of memberIds) sessionsCountByMember.set(id, 0);
+  for (const row of sessionsRes ?? []) {
     sessionsCountByMember.set(row.member_id, (sessionsCountByMember.get(row.member_id) ?? 0) + 1);
   }
 
   return members.map((m) => ({
     ...m,
-    pr_count: prCountByMember.get(m.id) ?? 0,
     sessions_count: sessionsCountByMember.get(m.id) ?? 0,
   }));
 }

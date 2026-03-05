@@ -1,8 +1,7 @@
 /**
  * Server Actions per Running.
  * addRunningSession: avvia una sessione di corsa.
- * finishRunningSession: chiude la sessione con km, pace, mood e note.
- *   Salva un gym_set con km_distance e pace_min_km, aggiorna best km e best pace in gym_prs.
+ * finishRunningSession: chiude la sessione con km, pace, mood e note (salva gym_set con km e pace).
  * getRunningHistory: storico sessioni con km e pace per il grafico.
  * memberId viene sempre letto da getSession() — mai accettato dal client.
  */
@@ -48,6 +47,59 @@ export async function addRunningSession(): Promise<string | null> {
     return null;
   }
   return data?.id ?? null;
+}
+
+/**
+ * Crea una sessione running in un colpo solo (log manuale, senza timer).
+ * date = YYYY-MM-DD; pace derivato da durationMinutes e km.
+ */
+export async function createManualRunningSession(
+  date: string,
+  durationMinutes: number,
+  km: number,
+  moodEmoji: string,
+  note: string
+): Promise<void> {
+  const session = await getSession();
+  if (!session) return;
+
+  if (km <= 0 || durationMinutes <= 0) return;
+  const paceMinKm = durationMinutes / km;
+  const moodInt = MOOD_EMOJI_TO_INT[moodEmoji] ?? 3;
+  const endedAt = new Date(date + 'T12:00:00.000Z');
+  const startedAt = new Date(endedAt.getTime() - durationMinutes * 60 * 1000);
+
+  const { data: inserted, error } = await supabase
+    .from('gym_sessions')
+    .insert({
+      member_id: session.memberId,
+      type: 'running',
+      started_at: startedAt.toISOString(),
+      ended_at: endedAt.toISOString(),
+      duration_minutes: durationMinutes,
+      mood: moodInt,
+      note: note || null,
+    })
+    .select('id')
+    .single();
+
+  if (error || !inserted) {
+    console.error('createManualRunningSession', error);
+    return;
+  }
+
+  await supabase.from('gym_sets').insert({
+    session_id: inserted.id,
+    member_id: session.memberId,
+    exercise_name: 'running',
+    km_distance: km,
+    pace_min_km: paceMinKm,
+    set_number: 1,
+  });
+
+  revalidatePath('/home');
+  revalidatePath('/training');
+  revalidatePath('/training/running');
 }
 
 /** Annulla una sessione running senza salvare (cancella dal DB). */
@@ -103,79 +155,16 @@ export async function finishRunningSession(
     set_number: 1,
   });
 
-  await updateRunningBests(authSession.memberId, kmDistance, paceMinKm, sessionId);
-
   revalidatePath('/home');
   revalidatePath('/training');
   revalidatePath('/training/running');
 }
 
-async function updateRunningBests(
-  memberId: string,
-  km: number,
-  pace: number,
-  sessionId: string
-) {
-  // Best km
-  const { data: bestKm } = await supabase
-    .from('gym_prs')
-    .select('weight_kg')
-    .eq('member_id', memberId)
-    .eq('exercise_name', 'best_km')
-    .eq('type', 'running')
-    .single();
-
-  if (!bestKm) {
-    await supabase.from('gym_prs').insert({
-      member_id: memberId,
-      exercise_name: 'best_km',
-      type: 'running',
-      weight_kg: km,
-      session_id: sessionId,
-    });
-  } else if (km > (bestKm.weight_kg ?? 0)) {
-    await supabase
-      .from('gym_prs')
-      .update({ weight_kg: km, achieved_at: new Date().toISOString(), session_id: sessionId })
-      .eq('member_id', memberId)
-      .eq('exercise_name', 'best_km')
-      .eq('type', 'running');
-  }
-
-  // Best pace: valore più basso = migliore (meno minuti per km)
-  const { data: bestPace } = await supabase
-    .from('gym_prs')
-    .select('weight_kg')
-    .eq('member_id', memberId)
-    .eq('exercise_name', 'best_pace')
-    .eq('type', 'running')
-    .single();
-
-  if (!bestPace) {
-    await supabase.from('gym_prs').insert({
-      member_id: memberId,
-      exercise_name: 'best_pace',
-      type: 'running',
-      weight_kg: pace,
-      session_id: sessionId,
-    });
-  } else if (pace < (bestPace.weight_kg ?? Infinity)) {
-    await supabase
-      .from('gym_prs')
-      .update({ weight_kg: pace, achieved_at: new Date().toISOString(), session_id: sessionId })
-      .eq('member_id', memberId)
-      .eq('exercise_name', 'best_pace')
-      .eq('type', 'running');
-  }
-}
-
 export async function getRunningHistory(): Promise<{
   sessions: RunningSessionEntry[];
-  bestKm: number | null;
-  bestPace: number | null;
 }> {
   const session = await getSession();
-  if (!session) return { sessions: [], bestKm: null, bestPace: null };
+  if (!session) return { sessions: [] };
 
   const { data: gymSessions } = await supabase
     .from('gym_sessions')
@@ -185,7 +174,7 @@ export async function getRunningHistory(): Promise<{
     .not('ended_at', 'is', null)
     .order('started_at', { ascending: false });
 
-  if (!gymSessions?.length) return { sessions: [], bestKm: null, bestPace: null };
+  if (!gymSessions?.length) return { sessions: [] };
 
   const sessionIds = gymSessions.map((s) => s.id);
   const { data: sets } = await supabase
@@ -213,15 +202,5 @@ export async function getRunningHistory(): Promise<{
     })
     .filter((s): s is RunningSessionEntry => s !== null);
 
-  const { data: prs } = await supabase
-    .from('gym_prs')
-    .select('exercise_name, weight_kg')
-    .eq('member_id', session.memberId)
-    .eq('type', 'running')
-    .in('exercise_name', ['best_km', 'best_pace']);
-
-  const bestKm = prs?.find((p) => p.exercise_name === 'best_km')?.weight_kg ?? null;
-  const bestPace = prs?.find((p) => p.exercise_name === 'best_pace')?.weight_kg ?? null;
-
-  return { sessions, bestKm, bestPace };
+  return { sessions };
 }

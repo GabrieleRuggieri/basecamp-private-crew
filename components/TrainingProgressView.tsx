@@ -1,8 +1,7 @@
 /**
- * Progress view: tab PRs (lista), History (grafico volume), Crew (progressi crew), Stats (placeholder).
+ * Progress view: tab History (grafico volume / sessioni), Crew (progressi crew).
  * Recharts per il grafico volume nel tempo.
  * Supporta gym, tricking, calisthenics, running.
- * Running mostra grafico km, best km e best pace invece dei PR esercizi.
  */
 'use client';
 
@@ -16,12 +15,12 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
-import { getGymPrs, getGymHistory, getCrewProgress, type CrewProgressMember } from '@/lib/actions/training-progress';
+import { getGymHistory, getCrewProgress, type CrewProgressMember } from '@/lib/actions/training-progress';
 import { getRunningHistory, type RunningSessionEntry } from '@/lib/actions/running';
 import { MemberAvatar } from '@/components/MemberAvatar';
 import type { TrainingType } from '@/lib/actions/training';
 
-type Tab = 'prs' | 'history' | 'crew' | 'stats';
+type Tab = 'history' | 'crew';
 
 const ACCENT_BY_TYPE: Record<TrainingType, string> = {
   gym: 'accent-red',
@@ -43,19 +42,14 @@ export function TrainingProgressView({
   type?: TrainingType;
 }) {
   const isRunning = type === 'running';
-  const [tab, setTab] = useState<Tab>(type === 'tricking' ? 'history' : 'prs');
-  const [prs, setPrs] = useState<
-    { exercise: string; weight_kg: number | null; reps: number | null }[]
-  >([]);
+  const [tab, setTab] = useState<Tab>('history');
   const [history, setHistory] = useState<{
     volumeByDate: { date: string; volume: number }[];
     sessions: { id: string; date: string; duration_minutes: number }[];
   }>({ volumeByDate: [], sessions: [] });
   const [runHistory, setRunHistory] = useState<{
     sessions: RunningSessionEntry[];
-    bestKm: number | null;
-    bestPace: number | null;
-  }>({ sessions: [], bestKm: null, bestPace: null });
+  }>({ sessions: [] });
   const [crew, setCrew] = useState<CrewProgressMember[]>([]);
   const accent = ACCENT_BY_TYPE[type];
 
@@ -63,29 +57,15 @@ export function TrainingProgressView({
     if (isRunning) {
       getRunningHistory().then(setRunHistory);
     } else {
-      getGymPrs(type).then(setPrs);
       getGymHistory(type).then(setHistory);
     }
     getCrewProgress(type).then(setCrew);
   }, [type, isRunning]);
 
-  useEffect(() => {
-    if (type === 'tricking' && tab === 'prs') setTab('history');
-  }, [type, tab]);
-
-  const tabs: { id: Tab; label: string }[] =
-    type === 'tricking'
-      ? [
-          { id: 'history', label: 'History' },
-          { id: 'crew', label: 'Crew' },
-          { id: 'stats', label: 'Stats' },
-        ]
-      : [
-          { id: 'prs', label: isRunning ? 'Best' : 'PRs' },
-          { id: 'history', label: 'History' },
-          { id: 'crew', label: 'Crew' },
-          { id: 'stats', label: 'Stats' },
-        ];
+  const tabs: { id: Tab; label: string }[] = [
+    { id: 'history', label: 'History' },
+    { id: 'crew', label: 'Crew' },
+  ];
 
   const formatDuration = (minutes: number) => {
     if (minutes < 60) return `${minutes} min`;
@@ -109,55 +89,6 @@ export function TrainingProgressView({
           </button>
         ))}
       </div>
-
-      {/* PRs / Best */}
-      {tab === 'prs' && !isRunning && type !== 'tricking' && (
-        <div className="space-y-3">
-          {prs.length === 0 ? (
-            <p className="text-text-tertiary text-center py-8">No PRs yet</p>
-          ) : (
-            prs.map((pr) => (
-              <div key={pr.exercise} className="card p-4">
-                <p className="text-text-primary font-medium">{pr.exercise}</p>
-                {(pr.weight_kg != null || pr.reps != null) && (
-                  <p className={`text-xl mt-1 text-[var(--${accent})]`}>
-                    {pr.weight_kg != null && `${pr.weight_kg} kg`}
-                    {pr.weight_kg != null && pr.reps != null && ' × '}
-                    {pr.reps != null && `${pr.reps} reps`}
-                  </p>
-                )}
-              </div>
-            ))
-          )}
-        </div>
-      )}
-
-      {tab === 'prs' && isRunning && (
-        <div className="space-y-3">
-          <div className="card p-5 rounded-xl flex items-center justify-between">
-            <div>
-              <p className="text-text-tertiary text-sm">Best km</p>
-              <p className={`text-3xl font-bold mt-1 text-[var(--${accent})]`}>
-                {runHistory.bestKm != null ? `${runHistory.bestKm.toFixed(2)} km` : '--'}
-              </p>
-            </div>
-            <span className="text-4xl">🏃</span>
-          </div>
-          <div className="card p-5 rounded-xl flex items-center justify-between">
-            <div>
-              <p className="text-text-tertiary text-sm">Best pace</p>
-              <p className={`text-3xl font-bold mt-1 text-[var(--${accent})]`}>
-                {runHistory.bestPace != null ? `${formatPace(runHistory.bestPace)} /km` : '--'}
-              </p>
-            </div>
-            <span className="text-4xl">⚡️</span>
-          </div>
-          <div className="card p-4 rounded-xl">
-            <p className="text-text-tertiary text-sm">Total sessions</p>
-            <p className="text-2xl font-bold text-text-primary mt-1">{runHistory.sessions.length}</p>
-          </div>
-        </div>
-      )}
 
       {/* History */}
       {tab === 'history' && !isRunning && (
@@ -310,38 +241,13 @@ export function TrainingProgressView({
                   <div className="flex-1 min-w-0">
                     <p className="text-subhead font-semibold text-text-primary">{m.name}</p>
                     <p className="text-footnote text-text-tertiary mt-0.5">
-                      {m.pr_count} PR · {m.sessions_count} sessions
+                      {m.sessions_count} sessions
                     </p>
                   </div>
                 </div>
-                {m.prs.length > 0 && (
-                  <div className="mt-3 pt-3 border-t border-separator space-y-2">
-                    {m.prs.slice(0, 3).map((pr) => (
-                      <div key={pr.exercise} className="flex justify-between text-sm">
-                        <span className="text-text-secondary">{pr.exercise}</span>
-                        <span className={`text-[var(--${accent})] font-medium`}>
-                          {pr.weight_kg != null && `${pr.weight_kg} kg`}
-                          {pr.weight_kg != null && pr.reps != null && ' × '}
-                          {pr.reps != null && `${pr.reps} reps`}
-                        </span>
-                      </div>
-                    ))}
-                    {m.prs.length > 3 && (
-                      <p className="text-text-tertiary text-xs">+{m.prs.length - 3} altri</p>
-                    )}
-                  </div>
-                )}
               </div>
             ))
           )}
-        </div>
-      )}
-
-      {/* Stats */}
-      {tab === 'stats' && (
-        <div className="card p-4">
-          <h3 className="text-text-secondary text-sm mb-4">Heatmap presenze</h3>
-          <p className="text-text-tertiary text-sm">In arrivo...</p>
         </div>
       )}
     </div>

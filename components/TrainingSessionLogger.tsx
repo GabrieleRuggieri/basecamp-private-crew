@@ -99,8 +99,6 @@ export function TrainingSessionLogger({
   const [mood, setMood] = useState<string | null>(null);
   const [note, setNote] = useState('');
   const [isFinishing, setIsFinishing] = useState(false);
-  const [newPr, setNewPr] = useState<string | null>(null);
-  const [prExercises, setPrExercises] = useState<string[]>([]);
   const [blockedBy, setBlockedBy] = useState<{
     type: 'running' | 'gym' | 'tricking' | 'calisthenics';
     sessionId: string;
@@ -181,21 +179,8 @@ export function TrainingSessionLogger({
     }
 
     const durationMinutes = Math.ceil(elapsed / 60);
-    const prList = type === 'gym' ? prExercises : [];
-    const prResult = await finishGymSession(
-      sessionId,
-      mood!,
-      note,
-      durationMinutes,
-      prList
-    );
+    await finishGymSession(sessionId, mood!, note, durationMinutes);
     setShowFinishSheet(false);
-
-    if (prResult?.exercise) {
-      setNewPr(prResult.exercise);
-      await new Promise((r) => setTimeout(r, 2000));
-    }
-
     router.push(backHref);
   };
 
@@ -378,43 +363,6 @@ export function TrainingSessionLogger({
         title="How do you feel?"
       >
         <div className="space-y-6">
-          {type === 'gym' && (() => {
-            const uniqueExercises = Array.from(
-              new Set(sets.map((s) => s.exercise.trim()).filter(Boolean))
-            );
-            return uniqueExercises.length > 0 ? (
-              <div>
-                <label className="text-text-secondary text-sm block mb-2">PR (mark if you hit a record)</label>
-                <div className="flex flex-wrap gap-2">
-                  {uniqueExercises.map((ex) => (
-                    <label
-                      key={ex}
-                      className={cn(
-                        'inline-flex items-center gap-2 px-3 py-2 rounded-button border cursor-pointer tap-target',
-                        prExercises.includes(ex)
-                          ? `bg-[var(--${accent})]/20 border-[var(--${accent})]`
-                          : 'bg-surface-elevated border-separator'
-                      )}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={prExercises.includes(ex)}
-                        onChange={(e) => {
-                          setPrExercises((prev) =>
-                            e.target.checked
-                              ? [...prev, ex]
-                              : prev.filter((x) => x !== ex)
-                          );
-                        }}
-                        className="sr-only"
-                      />
-                      <span className="text-sm text-text-primary">{ex}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-            ) : null;
-          })()}
           <div className="flex gap-3 flex-wrap">
             {MOODS.map((m) => (
               <button
@@ -455,16 +403,6 @@ export function TrainingSessionLogger({
           </button>
         </div>
       </BottomSheet>
-
-      {newPr && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80">
-          <div className="text-center p-8">
-            <p className="text-6xl mb-4">🎉</p>
-            <p className={cn('text-2xl font-bold', `text-[var(--${accent})]`)}>New PR!</p>
-            <p className="text-text-primary mt-2">{newPr}</p>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

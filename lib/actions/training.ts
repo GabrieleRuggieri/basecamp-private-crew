@@ -2,8 +2,7 @@
  * Server Actions per Training (gym, tricking, calisthenics).
  * addGymSession: avvia una sessione workout.
  * addGymSet: aggiunge una serie (esercizio, kg, reps).
- * finishGymSession: chiude la sessione con mood e note, controlla PR.
- * checkForPr: verifica se è un nuovo personal record.
+ * finishGymSession: chiude la sessione con mood e note.
  * memberId viene sempre letto da getSession() — mai accettato dal client.
  */
 'use server';
@@ -96,15 +95,14 @@ export async function finishGymSession(
   sessionId: string,
   moodEmoji: string,
   note: string,
-  durationMinutes: number,
-  prExercises: string[] = []
-): Promise<{ exercise: string } | null> {
+  durationMinutes: number
+): Promise<void> {
   const authSession = await getSession();
-  if (!authSession) return null;
+  if (!authSession) return;
 
   const moodInt = MOOD_EMOJI_TO_INT[moodEmoji] ?? 3;
 
-  const { data: session } = await supabase
+  await supabase
     .from('gym_sessions')
     .update({
       ended_at: new Date().toISOString(),
@@ -113,119 +111,64 @@ export async function finishGymSession(
       duration_minutes: durationMinutes,
     })
     .eq('id', sessionId)
-    .eq('member_id', authSession.memberId)
-    .select('member_id, type')
+    .eq('member_id', authSession.memberId);
+
+  revalidatePath('/home');
+  revalidatePath('/training');
+}
+
+/**
+ * Crea una sessione gym/tricking/calisthenics in un colpo solo (log manuale, senza timer).
+ * date = YYYY-MM-DD; started_at/ended_at derivati da date e durationMinutes.
+ */
+export async function createManualGymSession(
+  type: 'gym' | 'tricking' | 'calisthenics',
+  date: string,
+  durationMinutes: number,
+  moodEmoji: string,
+  note: string,
+  sets: { exercise: string; weight_kg: number | null; reps: number | null }[]
+): Promise<void> {
+  const session = await getSession();
+  if (!session) return;
+
+  const moodInt = MOOD_EMOJI_TO_INT[moodEmoji] ?? 3;
+  const endedAt = new Date(date + 'T12:00:00.000Z');
+  const startedAt = new Date(endedAt.getTime() - durationMinutes * 60 * 1000);
+
+  const { data: inserted, error } = await supabase
+    .from('gym_sessions')
+    .insert({
+      member_id: session.memberId,
+      type,
+      started_at: startedAt.toISOString(),
+      ended_at: endedAt.toISOString(),
+      duration_minutes: durationMinutes,
+      mood: moodInt,
+      note: note || null,
+    })
+    .select('id')
     .single();
 
-  if (!session) return null;
-
-  const sessionType = (session.type ?? 'gym') as TrainingType;
-
-  const { data: sets } = await supabase
-    .from('gym_sets')
-    .select('exercise_name, weight_kg, reps')
-    .eq('session_id', sessionId);
-
-  let newPrExercise: string | null = null;
-
-  // PR manuali solo per gym: checkbox per esercizio
-  if (sessionType === 'gym' && prExercises.length > 0 && sets?.length) {
-    const byExercise = new Map<string, { weight_kg: number | null; reps: number | null }[]>();
-    for (const s of sets) {
-      const name = s.exercise_name?.trim();
-      if (!name || !prExercises.includes(name)) continue;
-      const arr = byExercise.get(name) ?? [];
-      arr.push({ weight_kg: s.weight_kg, reps: s.reps });
-      byExercise.set(name, arr);
-    }
-    for (const [ex, arr] of byExercise) {
-      const best = arr.reduce((a, b) => {
-        const aBetter =
-          (a.weight_kg ?? 0) > (b.weight_kg ?? 0) ||
-          ((a.weight_kg ?? 0) === (b.weight_kg ?? 0) && (a.reps ?? 0) > (b.reps ?? 0));
-        return aBetter ? a : b;
-      });
-      const isPr = await checkForPr(
-        session.member_id,
-        ex,
-        best.weight_kg ?? null,
-        best.reps ?? null,
-        sessionId,
-        'gym'
-      );
-      if (isPr) newPrExercise = ex;
-    }
+  if (error || !inserted) {
+    console.error('createManualGymSession', error);
+    return;
   }
 
-  // Calisthenics: PR automatici (nessuna checkbox)
-  if (sessionType === 'calisthenics') {
-    for (const set of sets || []) {
-      const isPr = await checkForPr(
-        session.member_id,
-        set.exercise_name,
-        set.weight_kg ?? null,
-        set.reps ?? null,
-        sessionId,
-        'calisthenics'
-      );
-      if (isPr) newPrExercise = set.exercise_name;
-    }
+  const sessionId = inserted.id;
+  for (let i = 0; i < sets.length; i++) {
+    const s = sets[i];
+    if (!s.exercise.trim()) continue;
+    await supabase.from('gym_sets').insert({
+      session_id: sessionId,
+      member_id: session.memberId,
+      exercise_name: s.exercise.trim(),
+      weight_kg: s.weight_kg,
+      reps: s.reps,
+      set_number: i + 1,
+    });
   }
 
   revalidatePath('/home');
   revalidatePath('/training');
-  return newPrExercise ? { exercise: newPrExercise } : null;
-}
-
-export async function checkForPr(
-  memberId: string,
-  exerciseName: string,
-  weightKg: number | null,
-  reps: number | null,
-  sessionId: string,
-  type: TrainingType = 'gym'
-): Promise<boolean> {
-  const { data: existing } = await supabase
-    .from('gym_prs')
-    .select('weight_kg, reps')
-    .eq('member_id', memberId)
-    .eq('exercise_name', exerciseName)
-    .eq('type', type)
-    .single();
-
-  if (!existing) {
-    await supabase.from('gym_prs').insert({
-      member_id: memberId,
-      exercise_name: exerciseName,
-      type,
-      weight_kg: weightKg,
-      reps,
-      session_id: sessionId,
-    });
-    return true;
-  }
-
-  // Tricking: solo mossa, nessun miglioramento numerico
-  if (type === 'tricking') return false;
-
-  const isBetter =
-    (weightKg ?? 0) > (existing.weight_kg ?? 0) ||
-    ((weightKg ?? 0) === (existing.weight_kg ?? 0) && (reps ?? 0) > (existing.reps ?? 0));
-
-  if (isBetter) {
-    await supabase
-      .from('gym_prs')
-      .update({
-        weight_kg: weightKg,
-        reps,
-        achieved_at: new Date().toISOString(),
-        session_id: sessionId,
-      })
-      .eq('member_id', memberId)
-      .eq('exercise_name', exerciseName)
-      .eq('type', type);
-    return true;
-  }
-
-  return false;
 }

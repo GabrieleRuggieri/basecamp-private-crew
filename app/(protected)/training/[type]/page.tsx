@@ -71,6 +71,12 @@ export default async function TrainingTypePage({
         >
           {sessionLabel}
         </Link>
+        <Link
+          href={`/training/${type}/log`}
+          className="btn w-full rounded-xl font-medium flex items-center justify-center py-3 bg-surface-elevated text-text-secondary border border-[var(--card-border)]"
+        >
+          Log workout (no timer)
+        </Link>
 
         {type === 'gym' && (
           <>
