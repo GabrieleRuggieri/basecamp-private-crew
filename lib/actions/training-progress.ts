@@ -39,13 +39,15 @@ export async function getGymHistory(type: TrainingType = 'gym') {
   const sessionIds = sessions.map((s) => s.id);
   const { data: allSets } = await supabase
     .from('gym_sets')
-    .select('session_id, weight_kg, reps')
-    .in('session_id', sessionIds);
+    .select('session_id, exercise_name, weight_kg, reps, set_number')
+    .in('session_id', sessionIds)
+    .order('set_number');
 
-  const setsBySession = new Map<string, { weight_kg: number | null; reps: number | null }[]>();
+  const setsBySession = new Map<string, { exercise_name: string; weight_kg: number | null; reps: number | null }[]>();
   for (const x of allSets ?? []) {
+    if (x.exercise_name === 'running') continue;
     const list = setsBySession.get(x.session_id) ?? [];
-    list.push({ weight_kg: x.weight_kg, reps: x.reps });
+    list.push({ exercise_name: x.exercise_name, weight_kg: x.weight_kg, reps: x.reps });
     setsBySession.set(x.session_id, list);
   }
 
@@ -70,6 +72,7 @@ export async function getGymHistory(type: TrainingType = 'gym') {
       date: s.started_at.slice(0, 10),
       duration_minutes: s.duration_minutes ?? 0,
       started_at: s.started_at,
+      sets: setsBySession.get(s.id) ?? [],
     }))
     .sort((a, b) => b.started_at.localeCompare(a.started_at));
 

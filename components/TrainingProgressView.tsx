@@ -16,6 +16,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { getGymHistory, getCrewProgress, type CrewProgressMember } from '@/lib/actions/training-progress';
+import { formatSetsCompact } from '@/lib/utils';
 import { getRunningHistory, type RunningSessionEntry } from '@/lib/actions/running';
 import { MemberAvatar } from '@/components/MemberAvatar';
 import type { TrainingType } from '@/lib/actions/training';
@@ -45,7 +46,12 @@ export function TrainingProgressView({
   const [tab, setTab] = useState<Tab>('history');
   const [history, setHistory] = useState<{
     volumeByDate: { date: string; volume: number }[];
-    sessions: { id: string; date: string; duration_minutes: number }[];
+    sessions: {
+      id: string;
+      date: string;
+      duration_minutes: number;
+      sets?: { exercise_name: string; weight_kg: number | null; reps: number | null }[];
+    }[];
   }>({ volumeByDate: [], sessions: [] });
   const [runHistory, setRunHistory] = useState<{
     sessions: RunningSessionEntry[];
@@ -99,23 +105,45 @@ export function TrainingProgressView({
               <p className="text-text-tertiary text-sm">No sessions</p>
             ) : (
               <div className="space-y-2">
-                {history.sessions.map((s) => (
-                  <div
-                    key={s.id}
-                    className="flex justify-between items-center py-2 border-b border-separator last:border-0"
-                  >
-                    <span className="text-text-primary text-sm">
-                      {new Date(s.date).toLocaleDateString('en-US', {
-                        day: 'numeric',
-                        month: 'short',
-                        year: 'numeric',
-                      })}
-                    </span>
-                    <span className={`text-[var(--${accent})] font-medium`}>
-                      {formatDuration(s.duration_minutes)}
-                    </span>
-                  </div>
-                ))}
+                {history.sessions.map((s) => {
+                  const setsSummary = (s.sets ?? []).reduce(
+                    (acc, x) => {
+                      const key = x.exercise_name?.trim() || '?';
+                      if (!acc[key]) acc[key] = [] as { w: number | null; r: number | null }[];
+                      acc[key].push({ w: x.weight_kg, r: x.reps });
+                      return acc;
+                    },
+                    {} as Record<string, { w: number | null; r: number | null }[]>
+                  );
+                  const setsText =
+                    Object.keys(setsSummary).length > 0
+                      ? Object.entries(setsSummary)
+                          .map(([ex, arr]) => `${ex}: ${formatSetsCompact(arr)}`)
+                          .join(' · ')
+                      : null;
+                  return (
+                    <div
+                      key={s.id}
+                      className="py-2 border-b border-separator last:border-0"
+                    >
+                      <div className="flex justify-between items-center">
+                        <span className="text-text-primary text-sm">
+                          {new Date(s.date).toLocaleDateString('en-US', {
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric',
+                          })}
+                        </span>
+                        <span className={`text-[var(--${accent})] font-medium`}>
+                          {formatDuration(s.duration_minutes)}
+                        </span>
+                      </div>
+                      {setsText && (
+                        <p className="text-text-secondary text-xs mt-1 break-words">{setsText}</p>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>

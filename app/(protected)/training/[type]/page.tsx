@@ -75,26 +75,8 @@ export default async function TrainingTypePage({
           href={`/training/${type}/log`}
           className="btn w-full rounded-xl font-medium flex items-center justify-center py-3 bg-surface-elevated text-text-secondary border border-[var(--card-border)]"
         >
-          Log workout (no timer)
+          Log workout
         </Link>
-
-        {type === 'gym' && (
-          <>
-            <div className="card p-5 rounded-xl">
-              <h3 className="text-subhead font-semibold text-text-primary mb-2">
-                Weekly leaderboard
-              </h3>
-              <p className="text-footnote text-text-tertiary">No data yet</p>
-            </div>
-
-            <div className="card p-5 rounded-xl">
-              <h3 className="text-subhead font-semibold text-text-primary mb-2">
-                Recent sessions
-              </h3>
-              <p className="text-footnote text-text-tertiary">No sessions</p>
-            </div>
-          </>
-        )}
 
         <div className="flex gap-3">
           <Link

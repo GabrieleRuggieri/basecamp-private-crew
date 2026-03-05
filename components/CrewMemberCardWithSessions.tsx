@@ -9,6 +9,7 @@ import { useRouter } from 'next/navigation';
 import { MemberAvatar } from '@/components/MemberAvatar';
 import { addReaction, addComment, removeReaction } from '@/lib/actions/reactions';
 import type { ReactionSummary } from '@/lib/actions/reactions';
+import { formatSetsCompact } from '@/lib/utils';
 import type { CrewMemberWithSessions, CrewSessionWithSets } from '@/lib/actions/training-crew';
 
 const MOOD_EMOJI: Record<number, string> = {
@@ -75,43 +76,8 @@ function SessionCard({
       return acc;
     }, {} as Record<string, { w: number | null; r: number | null }[]>);
 
-  /** Format: uniform "70kg 4×8", pyramid "70kg 12, 10, 8, 6" or "70kg 8 rep, 80kg 6 rep" */
-  function compactSets(arr: { w: number | null; r: number | null }[]): string {
-    if (arr.length === 0) return '';
-    const parts: string[] = [];
-    let i = 0;
-    while (i < arr.length) {
-      const { w, r } = arr[i];
-      let count = 1;
-      while (i + count < arr.length && arr[i + count].w === w && arr[i + count].r === r) {
-        count++;
-      }
-      if (count > 1) {
-        parts.push(w != null ? `${w}kg ${count}×${r ?? '?'}` : `${count}×${r ?? '?'}`);
-      } else {
-        const repsVary = i + 1 < arr.length && arr[i + 1].w === w && arr[i + 1].r !== r;
-        if (repsVary) {
-          const repsGroup: (number | null)[] = [];
-          let j = i;
-          while (j < arr.length && arr[j].w === w) {
-            repsGroup.push(arr[j].r);
-            j++;
-          }
-          if (repsGroup.length > 1) {
-            parts.push(w != null ? `${w}kg ${repsGroup.map((r) => r ?? '?').join(', ')}` : repsGroup.map((r) => r ?? '?').join(', '));
-            i = j;
-            continue;
-          }
-        }
-        parts.push(w != null ? `${w}kg ${r ?? '?'} rep` : `${r ?? '?'} rep`);
-      }
-      i += count;
-    }
-    return parts.join(', ');
-  }
-
   const setsText = Object.entries(setsSummary)
-    .map(([ex, arr]) => `${ex}: ${compactSets(arr)}`)
+    .map(([ex, arr]) => `${ex}: ${formatSetsCompact(arr)}`)
     .join(' · ');
 
   return (
