@@ -28,7 +28,12 @@ function todayISO() {
   return d.toISOString().slice(0, 10);
 }
 
-type SetRow = { exercise: string; weight_kg: number | null; reps: number | null };
+type SetRow = {
+  exercise: string;
+  weight_kg: number | null;
+  reps: string; // "8" or "12-10-8-6"; for tricking used as single reps
+  sets_count: number | null; // gym/calisthenics: number of sets; tricking: null
+};
 
 export default function LogWorkoutPage() {
   const router = useRouter();
@@ -39,20 +44,28 @@ export default function LogWorkoutPage() {
 
   const [date, setDate] = useState(todayISO());
   const [durationMinutes, setDurationMinutes] = useState('');
-  const [sets, setSets] = useState<SetRow[]>([{ exercise: '', weight_kg: null, reps: null }]);
+  const getDefaultSet = (): SetRow => ({
+    exercise: '',
+    weight_kg: null,
+    reps: '',
+    sets_count: type === 'gym' || type === 'calisthenics' ? 1 : null,
+  });
+  const [sets, setSets] = useState<SetRow[]>(() => [getDefaultSet()]);
   const [km, setKm] = useState('');
   const [mood, setMood] = useState<string | null>(null);
   const [note, setNote] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const addSet = () => setSets((s) => [...s, { exercise: '', weight_kg: null, reps: null }]);
+  const addSet = () => setSets((s) => [...s, getDefaultSet()]);
   const removeSet = (idx: number) => setSets((s) => s.filter((_, i) => i !== idx));
   const updateSet = (idx: number, field: keyof SetRow, value: string | number | null) => {
     setSets((s) => {
       const next = [...s];
-      if (field === 'exercise') next[idx] = { ...next[idx], exercise: value as string };
-      else if (field === 'weight_kg') next[idx] = { ...next[idx], weight_kg: value as number | null };
-      else next[idx] = { ...next[idx], reps: value as number | null };
+      const cur = next[idx];
+      if (field === 'exercise') next[idx] = { ...cur, exercise: value as string };
+      else if (field === 'weight_kg') next[idx] = { ...cur, weight_kg: value as number | null };
+      else if (field === 'reps') next[idx] = { ...cur, reps: value !== null ? String(value) : '' };
+      else if (field === 'sets_count') next[idx] = { ...cur, sets_count: value as number | null };
       return next;
     });
   };
@@ -79,7 +92,8 @@ export default function LogWorkoutPage() {
       .map((s) => ({
         exercise: s.exercise.trim(),
         weight_kg: s.weight_kg,
-        reps: s.reps,
+        sets_count: s.sets_count ?? 1,
+        reps: s.reps.trim(),
       }));
     if (setsToSend.length === 0) return;
 
@@ -199,12 +213,21 @@ export default function LogWorkoutPage() {
                       />
                       <input
                         type="number"
-                        placeholder="reps"
-                        value={set.reps ?? ''}
+                        placeholder="sets"
+                        min={1}
+                        value={set.sets_count ?? ''}
                         onChange={(e) =>
-                          updateSet(idx, 'reps', e.target.value ? parseInt(e.target.value, 10) : null)
+                          updateSet(idx, 'sets_count', e.target.value ? parseInt(e.target.value, 10) : null)
                         }
                         className="w-12 min-w-[3rem] shrink-0 bg-surface-elevated rounded-lg px-1 py-2 text-center text-text-primary border border-[var(--card-border)] focus:outline-none text-base touch-manipulation"
+                      />
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        placeholder="8 or 12-10-8-6"
+                        value={set.reps}
+                        onChange={(e) => updateSet(idx, 'reps', e.target.value)}
+                        className="w-20 min-w-[4.5rem] shrink-0 bg-surface-elevated rounded-lg px-2 py-2 text-center text-text-primary placeholder:text-text-tertiary border border-[var(--card-border)] focus:outline-none text-base touch-manipulation"
                       />
                     </>
                   )}
@@ -222,24 +245,32 @@ export default function LogWorkoutPage() {
                       />
                       <input
                         type="number"
-                        placeholder="reps"
-                        value={set.reps ?? ''}
+                        placeholder="sets"
+                        min={1}
+                        value={set.sets_count ?? ''}
                         onChange={(e) =>
-                          updateSet(idx, 'reps', e.target.value ? parseInt(e.target.value, 10) : null)
+                          updateSet(idx, 'sets_count', e.target.value ? parseInt(e.target.value, 10) : null)
                         }
                         className="w-12 min-w-[3rem] shrink-0 bg-surface-elevated rounded-lg px-1 py-2 text-center text-text-primary border border-[var(--card-border)] focus:outline-none text-base touch-manipulation"
+                      />
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        placeholder="8 or 12-10-8-6"
+                        value={set.reps}
+                        onChange={(e) => updateSet(idx, 'reps', e.target.value)}
+                        className="w-20 min-w-[4.5rem] shrink-0 bg-surface-elevated rounded-lg px-2 py-2 text-center text-text-primary placeholder:text-text-tertiary border border-[var(--card-border)] focus:outline-none text-base touch-manipulation"
                       />
                     </>
                   )}
                   {trainingType === 'tricking' && (
                     <input
-                      type="number"
+                      type="text"
+                      inputMode="numeric"
                       placeholder="reps"
-                      value={set.reps ?? ''}
-                      onChange={(e) =>
-                        updateSet(idx, 'reps', e.target.value ? parseInt(e.target.value, 10) : null)
-                      }
-                      className="w-12 min-w-[3rem] shrink-0 bg-surface-elevated rounded-lg px-1 py-2 text-center text-text-primary border border-[var(--card-border)] focus:outline-none text-base touch-manipulation"
+                      value={set.reps}
+                      onChange={(e) => updateSet(idx, 'reps', e.target.value)}
+                      className="w-12 min-w-[3rem] shrink-0 bg-surface-elevated rounded-lg px-1 py-2 text-center text-text-primary placeholder:text-text-tertiary border border-[var(--card-border)] focus:outline-none text-base touch-manipulation"
                     />
                   )}
                   <button type="button" onClick={() => removeSet(idx)} className="px-3 py-2 text-text-tertiary tap-target shrink-0">

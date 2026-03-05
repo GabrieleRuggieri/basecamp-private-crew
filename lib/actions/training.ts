@@ -121,13 +121,27 @@ export async function finishGymSession(
  * Crea una sessione gym/tricking/calisthenics in un colpo solo (log manuale, senza timer).
  * date = YYYY-MM-DD; started_at/ended_at derivati da date e durationMinutes.
  */
+/** Parse reps string: "8" → [8,8,8,8] for 4 sets; "12-10-8-6" → [12,10,8,6] */
+function parseReps(repsStr: string, setsCount: number): (number | null)[] {
+  const trimmed = repsStr.trim();
+  if (!trimmed) return Array(setsCount).fill(null);
+  const parts = trimmed.split(/[-,\s]+/).map((p) => parseInt(p.trim(), 10)).filter((n) => !isNaN(n));
+  if (parts.length === 0) return Array(setsCount).fill(null);
+  if (parts.length === 1) return Array(setsCount).fill(parts[0]);
+  const result: (number | null)[] = [];
+  for (let i = 0; i < setsCount; i++) {
+    result.push(parts[i] ?? parts[parts.length - 1] ?? null);
+  }
+  return result;
+}
+
 export async function createManualGymSession(
   type: 'gym' | 'tricking' | 'calisthenics',
   date: string,
   durationMinutes: number,
   moodEmoji: string,
   note: string,
-  sets: { exercise: string; weight_kg: number | null; reps: number | null }[]
+  sets: { exercise: string; weight_kg: number | null; sets_count: number; reps: string }[]
 ): Promise<void> {
   const session = await getSession();
   if (!session) return;
@@ -156,17 +170,20 @@ export async function createManualGymSession(
   }
 
   const sessionId = inserted.id;
-  for (let i = 0; i < sets.length; i++) {
-    const s = sets[i];
+  let setNumber = 1;
+  for (const s of sets) {
     if (!s.exercise.trim()) continue;
-    await supabase.from('gym_sets').insert({
-      session_id: sessionId,
-      member_id: session.memberId,
-      exercise_name: s.exercise.trim(),
-      weight_kg: s.weight_kg,
-      reps: s.reps,
-      set_number: i + 1,
-    });
+    const repsArr = parseReps(s.reps, s.sets_count);
+    for (let i = 0; i < s.sets_count; i++) {
+      await supabase.from('gym_sets').insert({
+        session_id: sessionId,
+        member_id: session.memberId,
+        exercise_name: s.exercise.trim(),
+        weight_kg: s.weight_kg,
+        reps: repsArr[i] ?? null,
+        set_number: setNumber++,
+      });
+    }
   }
 
   revalidatePath('/home');
