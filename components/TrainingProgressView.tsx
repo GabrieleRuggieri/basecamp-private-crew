@@ -147,35 +147,6 @@ export function TrainingProgressView({
               </div>
             )}
           </div>
-          {type !== 'tricking' && history.volumeByDate.length > 0 && (
-            <div className="card p-4">
-              <h3 className="text-text-secondary text-sm mb-4">Volume per day</h3>
-              <div className="h-48">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={history.volumeByDate}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="var(--separator)" />
-                    <XAxis dataKey="date" stroke="var(--text-tertiary)" tick={{ fontSize: 10 }} />
-                    <YAxis stroke="var(--text-tertiary)" tick={{ fontSize: 10 }} />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: 'var(--surface-elevated)',
-                        border: '1px solid var(--separator)',
-                        borderRadius: 12,
-                      }}
-                      labelStyle={{ color: 'var(--text-primary)' }}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="volume"
-                      stroke={`var(--${accent})`}
-                      strokeWidth={2}
-                      dot={{ fill: `var(--${accent})` }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-          )}
         </div>
       )}
 
