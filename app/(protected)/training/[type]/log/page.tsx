@@ -6,7 +6,6 @@
 
 import { useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import Link from 'next/link';
 import { BackButton } from '@/components/BackButton';
 import { createManualGymSession } from '@/lib/actions/training';
 import { createManualRunningSession } from '@/lib/actions/running';
@@ -111,26 +110,26 @@ export default function LogWorkoutPage() {
   const backHref = `/training/${type}`;
 
   return (
-    <main className="min-h-dvh px-5 pb-8">
-      <header className="flex items-center gap-3 pt-4 pb-2 safe-area-top">
+    <main className="min-h-dvh px-5 pb-8 overflow-x-hidden">
+      <header className="flex items-center gap-3 pt-4 pb-2 safe-area-top min-w-0">
         <BackButton href={backHref} />
         <h1 className="text-title font-bold text-text-primary flex-1" style={{ letterSpacing: '-0.04em' }}>
           Log workout
         </h1>
       </header>
 
-      <form onSubmit={handleSubmit} className="space-y-5">
-        <div className="card p-4 rounded-xl space-y-4">
-          <div>
+      <form onSubmit={handleSubmit} className="space-y-5 min-w-0">
+        <div className="card p-4 rounded-xl space-y-4 overflow-hidden">
+          <div className="min-w-0">
             <label className="text-text-secondary text-sm block mb-2">Date</label>
             <input
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="w-full bg-surface-elevated rounded-xl p-3 text-text-primary border border-[var(--card-border)] focus:outline-none focus:border-[var(--accent-red)]"
+              className="w-full min-w-0 max-w-full bg-surface-elevated rounded-xl p-3 text-text-primary border border-[var(--card-border)] focus:outline-none focus:border-[var(--accent-red)] text-base touch-manipulation"
             />
           </div>
-          <div>
+          <div className="min-w-0">
             <label className="text-text-secondary text-sm block mb-2">Duration (minutes)</label>
             <input
               type="number"
@@ -139,13 +138,13 @@ export default function LogWorkoutPage() {
               value={durationMinutes}
               onChange={(e) => setDurationMinutes(e.target.value)}
               placeholder="e.g. 45"
-              className="w-full bg-surface-elevated rounded-xl p-3 text-text-primary placeholder:text-text-tertiary border border-[var(--card-border)] focus:outline-none focus:border-[var(--accent-red)]"
+              className="w-full min-w-0 max-w-full bg-surface-elevated rounded-xl p-3 text-text-primary placeholder:text-text-tertiary border border-[var(--card-border)] focus:outline-none focus:border-[var(--accent-red)] text-base touch-manipulation"
             />
           </div>
 
           {isRunning && (
             <>
-              <div>
+              <div className="min-w-0">
                 <label className="text-text-secondary text-sm block mb-2">Distance (km)</label>
                 <input
                   type="number"
@@ -154,7 +153,7 @@ export default function LogWorkoutPage() {
                   value={km}
                   onChange={(e) => setKm(e.target.value)}
                   placeholder="e.g. 5.2"
-                  className="w-full bg-surface-elevated rounded-xl p-3 text-text-primary placeholder:text-text-tertiary border border-[var(--card-border)] focus:outline-none focus:border-[var(--accent-red)]"
+                  className="w-full min-w-0 max-w-full bg-surface-elevated rounded-xl p-3 text-text-primary placeholder:text-text-tertiary border border-[var(--card-border)] focus:outline-none focus:border-[var(--accent-red)] text-base touch-manipulation"
                 />
               </div>
               {paceDisplay && (
@@ -164,24 +163,24 @@ export default function LogWorkoutPage() {
           )}
 
           {!isRunning && (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <label className="text-text-secondary text-sm">
+            <div className="space-y-3 min-w-0">
+              <div className="flex items-center justify-between gap-2 min-w-0">
+                <label className="text-text-secondary text-sm shrink-0">
                   {trainingType === 'tricking' ? 'Moves' : 'Sets'}
                 </label>
-                <button type="button" onClick={addSet} className={cn('flex items-center gap-2 tap-target', 'text-[var(--accent-red)]')}>
+                <button type="button" onClick={addSet} className={cn('flex items-center gap-2 tap-target shrink-0', 'text-[var(--accent-red)]')}>
                   <Plus size={18} />
                   Add
                 </button>
               </div>
               {sets.map((set, idx) => (
-                <div key={idx} className="flex gap-2 items-center">
+                <div key={idx} className="flex gap-2 items-center min-w-0">
                   <input
                     type="text"
                     placeholder={trainingType === 'tricking' ? 'Move' : 'Exercise'}
                     value={set.exercise}
                     onChange={(e) => updateSet(idx, 'exercise', e.target.value)}
-                    className="flex-1 bg-surface-elevated rounded-lg px-3 py-2 text-text-primary placeholder:text-text-tertiary border border-[var(--card-border)] focus:outline-none"
+                    className="flex-1 min-w-0 bg-surface-elevated rounded-lg px-3 py-2 text-text-primary placeholder:text-text-tertiary border border-[var(--card-border)] focus:outline-none text-base touch-manipulation"
                   />
                   {trainingType === 'gym' && (
                     <>
@@ -192,7 +191,7 @@ export default function LogWorkoutPage() {
                         onChange={(e) =>
                           updateSet(idx, 'weight_kg', e.target.value ? parseFloat(e.target.value) : null)
                         }
-                        className="w-14 bg-surface-elevated rounded-lg px-2 py-2 text-center text-text-primary border border-[var(--card-border)] focus:outline-none"
+                        className="w-12 min-w-[3rem] shrink-0 bg-surface-elevated rounded-lg px-1 py-2 text-center text-text-primary border border-[var(--card-border)] focus:outline-none text-base touch-manipulation"
                       />
                       <input
                         type="number"
@@ -201,7 +200,7 @@ export default function LogWorkoutPage() {
                         onChange={(e) =>
                           updateSet(idx, 'reps', e.target.value ? parseInt(e.target.value, 10) : null)
                         }
-                        className="w-14 bg-surface-elevated rounded-lg px-2 py-2 text-center text-text-primary border border-[var(--card-border)] focus:outline-none"
+                        className="w-12 min-w-[3rem] shrink-0 bg-surface-elevated rounded-lg px-1 py-2 text-center text-text-primary border border-[var(--card-border)] focus:outline-none text-base touch-manipulation"
                       />
                     </>
                   )}
@@ -215,7 +214,7 @@ export default function LogWorkoutPage() {
                         onChange={(e) =>
                           updateSet(idx, 'weight_kg', e.target.value ? parseFloat(e.target.value) : null)
                         }
-                        className="w-14 bg-surface-elevated rounded-lg px-2 py-2 text-center text-text-primary border border-[var(--card-border)] focus:outline-none"
+                        className="w-12 min-w-[3rem] shrink-0 bg-surface-elevated rounded-lg px-1 py-2 text-center text-text-primary border border-[var(--card-border)] focus:outline-none text-base touch-manipulation"
                       />
                       <input
                         type="number"
@@ -224,7 +223,7 @@ export default function LogWorkoutPage() {
                         onChange={(e) =>
                           updateSet(idx, 'reps', e.target.value ? parseInt(e.target.value, 10) : null)
                         }
-                        className="w-14 bg-surface-elevated rounded-lg px-2 py-2 text-center text-text-primary border border-[var(--card-border)] focus:outline-none"
+                        className="w-12 min-w-[3rem] shrink-0 bg-surface-elevated rounded-lg px-1 py-2 text-center text-text-primary border border-[var(--card-border)] focus:outline-none text-base touch-manipulation"
                       />
                     </>
                   )}
@@ -236,10 +235,10 @@ export default function LogWorkoutPage() {
                       onChange={(e) =>
                         updateSet(idx, 'reps', e.target.value ? parseInt(e.target.value, 10) : null)
                       }
-                      className="w-14 bg-surface-elevated rounded-lg px-2 py-2 text-center text-text-primary border border-[var(--card-border)] focus:outline-none"
+                      className="w-12 min-w-[3rem] shrink-0 bg-surface-elevated rounded-lg px-1 py-2 text-center text-text-primary border border-[var(--card-border)] focus:outline-none text-base touch-manipulation"
                     />
                   )}
-                  <button type="button" onClick={() => removeSet(idx)} className="p-2 text-text-tertiary tap-target">
+                  <button type="button" onClick={() => removeSet(idx)} className="p-2 text-text-tertiary tap-target shrink-0">
                     <Trash2 size={18} />
                   </button>
                 </div>
@@ -248,7 +247,7 @@ export default function LogWorkoutPage() {
           )}
         </div>
 
-        <div className="card p-4 rounded-xl">
+        <div className="card p-4 rounded-xl overflow-hidden">
           <label className="text-text-secondary text-sm block mb-2">How do you feel?</label>
           <div className="flex gap-2 flex-wrap">
             {MOODS.map((m) => (
@@ -267,13 +266,13 @@ export default function LogWorkoutPage() {
           </div>
         </div>
 
-        <div className="card p-4 rounded-xl">
+        <div className="card p-4 rounded-xl overflow-hidden">
           <label className="text-text-secondary text-sm block mb-2">Note</label>
           <textarea
             value={note}
             onChange={(e) => setNote(e.target.value)}
             placeholder="Optional"
-            className="w-full bg-surface-elevated rounded-xl p-3 text-text-primary placeholder:text-text-tertiary border border-[var(--card-border)] focus:outline-none min-h-[80px]"
+            className="w-full min-w-0 max-w-full bg-surface-elevated rounded-xl p-3 text-text-primary placeholder:text-text-tertiary border border-[var(--card-border)] focus:outline-none min-h-[80px] text-base touch-manipulation"
           />
         </div>
 
