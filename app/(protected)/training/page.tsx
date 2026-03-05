@@ -65,7 +65,7 @@ export default async function TrainingPage() {
           <Link
             key={href}
             href={href}
-            className={`card p-5 rounded-xl flex items-center gap-4 transition-all active:scale-[0.98] border-l-4 border-[var(--${accent})]`}
+            className="card p-5 rounded-xl flex items-center gap-4 transition-all active:scale-[0.98]"
           >
             <div
               className={`w-12 h-12 rounded-xl flex items-center justify-center bg-[var(--${accent})]/20`}
