@@ -256,5 +256,8 @@
 }
 [data-log-workout] input[type="date"] {
   min-width: 0;
+  -webkit-appearance: none;
+  appearance: none;
+  border-radius: var(--radius-xl);
 }
 
