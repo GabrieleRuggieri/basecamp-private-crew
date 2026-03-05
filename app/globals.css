@@ -248,3 +248,13 @@
 .feed-card-thought { border-left: 3px solid var(--accent-purple); }
 .feed-card-gym { border-left: 3px solid var(--accent-red); }
 
+/* Log workout: contenimento input su iOS (date, number) */
+[data-log-workout] input,
+[data-log-workout] textarea {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+[data-log-workout] input[type="date"] {
+  min-width: 0;
+}
+
