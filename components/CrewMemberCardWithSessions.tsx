@@ -75,11 +75,43 @@ function SessionCard({
       return acc;
     }, {} as Record<string, { w: number | null; r: number | null }[]>);
 
+  /** Format: uniform "70kg 4×8", pyramid "70kg 12, 10, 8, 6" or "70kg 8 rep, 80kg 6 rep" */
+  function compactSets(arr: { w: number | null; r: number | null }[]): string {
+    if (arr.length === 0) return '';
+    const parts: string[] = [];
+    let i = 0;
+    while (i < arr.length) {
+      const { w, r } = arr[i];
+      let count = 1;
+      while (i + count < arr.length && arr[i + count].w === w && arr[i + count].r === r) {
+        count++;
+      }
+      if (count > 1) {
+        parts.push(w != null ? `${w}kg ${count}×${r ?? '?'}` : `${count}×${r ?? '?'}`);
+      } else {
+        const repsVary = i + 1 < arr.length && arr[i + 1].w === w && arr[i + 1].r !== r;
+        if (repsVary) {
+          const repsGroup: (number | null)[] = [];
+          let j = i;
+          while (j < arr.length && arr[j].w === w) {
+            repsGroup.push(arr[j].r);
+            j++;
+          }
+          if (repsGroup.length > 1) {
+            parts.push(w != null ? `${w}kg ${repsGroup.map((r) => r ?? '?').join(', ')}` : repsGroup.map((r) => r ?? '?').join(', '));
+            i = j;
+            continue;
+          }
+        }
+        parts.push(w != null ? `${w}kg ${r ?? '?'} rep` : `${r ?? '?'} rep`);
+      }
+      i += count;
+    }
+    return parts.join(', ');
+  }
+
   const setsText = Object.entries(setsSummary)
-    .map(([ex, arr]) => {
-      const parts = arr.map((x) => (x.w ? `${x.w}×${x.r ?? '?'}` : `${x.r ?? '?'}`));
-      return `${ex}: ${parts.join(', ')}`;
-    })
+    .map(([ex, arr]) => `${ex}: ${compactSets(arr)}`)
     .join(' · ');
 
   return (
@@ -94,7 +126,7 @@ function SessionCard({
         )}
       </div>
       {setsText && (
-        <p className="text-sm text-text-secondary mt-1 line-clamp-2">{setsText}</p>
+        <p className="text-sm text-text-secondary mt-1 whitespace-pre-wrap break-words">{setsText}</p>
       )}
 
       <div className="flex gap-2 mt-2 flex-wrap">
