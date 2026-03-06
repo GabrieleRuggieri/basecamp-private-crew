@@ -204,7 +204,7 @@ export function RunningSessionLogger({
           <>
             <p className="text-text-primary font-medium text-body">Session error</p>
             <p className="text-text-tertiary text-footnote mt-2 max-w-[280px]">
-              Leave and re-enter. If the issue persists run supabase/08-add-running.sql
+              Leave and re-enter. If the issue persists check that your DB schema includes running support (see 01-schema.sql)
             </p>
           </>
         ) : (

@@ -20,11 +20,11 @@ create table admin_config (
   admin_token text unique not null default encode(gen_random_bytes(32), 'hex')
 );
 
--- TRAINING: Sessions (gym, tricking, calisthenics)
+-- TRAINING: Sessions (gym, tricking, calisthenics, running)
 create table gym_sessions (
   id uuid primary key default gen_random_uuid(),
   member_id uuid references members(id) on delete cascade,
-  type text default 'gym' check (type in ('gym', 'tricking', 'calisthenics')),
+  type text default 'gym' check (type in ('gym', 'tricking', 'calisthenics', 'running')),
   started_at timestamptz default now(),
   ended_at timestamptz,
   duration_minutes int,
@@ -41,15 +41,17 @@ create table gym_sets (
   weight_kg numeric(5,2),
   reps int,
   set_number int,
+  km_distance numeric(6,3),
+  pace_min_km numeric(5,2),
   created_at timestamptz default now()
 );
 
--- TRAINING: Personal Records (per type: gym, tricking, calisthenics)
+-- TRAINING: Personal Records (per type: gym, tricking, calisthenics, running)
 create table gym_prs (
   id uuid primary key default gen_random_uuid(),
   member_id uuid references members(id) on delete cascade,
   exercise_name text not null,
-  type text default 'gym' check (type in ('gym', 'tricking', 'calisthenics')),
+  type text default 'gym' check (type in ('gym', 'tricking', 'calisthenics', 'running')),
   weight_kg numeric(5,2),
   reps int,
   achieved_at timestamptz default now(),
@@ -120,6 +122,8 @@ create table moments (
   taken_at timestamptz default now(),
   location text
 );
+
+create index idx_moments_album_id on moments(album_id);
 
 -- REACTIONS (emoji o commento, uno per membro per target)
 create table reactions (

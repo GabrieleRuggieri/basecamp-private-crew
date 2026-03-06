@@ -6,12 +6,12 @@ Script SQL numerati per inizializzazione, reset e manutenzione.
 
 | File | Cosa fa |
 |------|---------|
-| **01-schema.sql** | Crea tutte le tabelle |
-| **02-seed.sql** | Admin + primo utente (modifica `TuoNome` se serve) |
+| **01-schema.sql** | Crea tutte le tabelle (incluso running e album) |
+| **02-seed.sql** | Admin + primo utente (modifica il nome se serve) |
 | **03-storage-public.sql** | Rende il bucket `moments` pubblico (opzionale) |
-| **04-reset-and-seed.sql** | Reset completo: svuota e ricrea 1 membro (Gabriele) |
+| **04-reset-and-seed.sql** | Reset completo: svuota e ricrea 1 membro admin |
 | **05-cleanup.sql** | Svuota dati utente, mantiene members e admin_config |
-| **07-moment-albums.sql** | Aggiunge album (cartelle) per Moments — esegui se hai DB esistente |
+| **06-add-member.sql** | Aggiunge un nuovo membro con token |
 
 ## Flussi
 

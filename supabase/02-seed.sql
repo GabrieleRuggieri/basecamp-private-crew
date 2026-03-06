@@ -6,7 +6,7 @@
 
 -- 1. Inserisci il primo membro (admin)
 INSERT INTO members (name, emoji, role) 
-VALUES ('Gabriele', '💻', 'admin');
+VALUES ('Admin', '💻', 'admin');
 
 -- 2. Crea la riga admin config
 INSERT INTO admin_config DEFAULT VALUES;

@@ -6,6 +6,7 @@
 # Build
 /.next/
 /out/
+tsconfig.tsbuildinfo
 
 # Env
 .env

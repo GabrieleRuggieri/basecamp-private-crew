@@ -139,14 +139,12 @@ Run in the Supabase SQL Editor in this order:
 
 | Script | Purpose |
 |--------|---------|
-| `01-schema.sql` | Core tables: `members`, `admin_config`, `gym_sessions`, `gym_sets`, `gym_prs`, `travels`, `thoughts`, `thought_tags`, `watchlist`, `moment_albums`, `moments`, `reactions` |
+| `01-schema.sql` | Core tables: `members`, `admin_config`, `gym_sessions`, `gym_sets`, `gym_prs`, `travels`, `thoughts`, `thought_tags`, `watchlist`, `moment_albums`, `moments`, `reactions`. Includes running support (`km_distance`, `pace_min_km`) and album index. |
 | `02-seed.sql` | Initial admin member + `admin_config` row; outputs `member_token` and `admin_token` |
 | `03-storage-public.sql` | Optional: configures Storage bucket / RLS for moments |
 | `04-reset-and-seed.sql` | Optional: full reset + seed (training, thoughts, etc.) |
 | `05-cleanup.sql` | Optional: cleanup helpers / reference |
 | `06-add-member.sql` | Optional: add member and token |
-| `07-moment-albums.sql` | Optional: adds `moment_albums` and `album_id` / `position` on `moments` if not in 01 |
-| `08-add-running.sql` | Adds `running` to `gym_sessions.type` and `gym_prs.type`; adds `km_distance`, `pace_min_km` to `gym_sets` for running |
 
 ### First-time setup (after 01 and 02)
 
@@ -155,7 +153,6 @@ Run in the Supabase SQL Editor in this order:
    - **member_token** → use as `/enter/[token]` or set as `DEV_NFC_TOKEN` in dev.
    - **admin_token** → use for `/api/admin/members?token=...` to list members and their entry URLs.
 3. Create the **moments** bucket in Supabase if not already created.
-4. For running support, run `08-add-running.sql`.
 
 ### Main tables (summary)
 
