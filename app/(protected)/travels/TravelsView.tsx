@@ -116,15 +116,15 @@ export function TravelsView({
         + Add travel
       </button>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="space-y-3">
         {filtered.length === 0 ? (
-          <p className="col-span-2 text-text-tertiary text-center py-8">
+          <p className="text-text-tertiary text-center py-8">
             No travels yet
           </p>
         ) : (
           filtered.map((t) => (
             <div key={t.id} className="card p-4 rounded-xl flex justify-between items-start gap-2">
-              <div>
+              <div className="flex-1 min-w-0">
                 <p className="text-text-primary font-medium">{t.title}</p>
                 <p className="text-text-tertiary text-sm">
                   {t.country_emoji && `${t.country_emoji} `}
@@ -132,6 +132,11 @@ export function TravelsView({
                 </p>
                 {t.year && (
                   <p className="text-accent-green text-xs mt-1">{t.year}</p>
+                )}
+                {t.note && (
+                  <p className="text-text-secondary text-sm mt-2 italic whitespace-pre-wrap break-words">
+                    {t.note}
+                  </p>
                 )}
               </div>
               {currentMemberId && t.member_id === currentMemberId && (
