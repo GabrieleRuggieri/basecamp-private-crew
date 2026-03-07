@@ -14,6 +14,33 @@ const TRAINING_LABELS: Record<string, { label: string; icon: React.ElementType; 
   calisthenics: { label: 'Calisthenics', icon: CalisthenicsIcon, accent: 'accent-red' },
 };
 
+/** Versione notifica: solo "Utente X ha aggiunto qualcosa in Sezione Y" */
+export function FeedNotificationItem({
+  item,
+  sectionLabel,
+  index = 0,
+}: {
+  item: FeedItem;
+  sectionLabel: string;
+  index?: number;
+}) {
+  const author = item.author;
+  const isAnonymous = item.type === 'thought' && (item.payload as { anonymous?: boolean })?.anonymous;
+  const authorName = isAnonymous ? 'Qualcuno' : author?.name ?? 'Utente';
+
+  return (
+    <div
+      className="flex items-center gap-2 py-2 text-footnote text-text-secondary animate-fade-in"
+      style={{ animationDelay: `${index * 30}ms` }}
+    >
+      <span className="text-text-primary font-medium">{authorName}</span>
+      <span>ha aggiunto qualcosa in</span>
+      <span className="font-medium text-text-primary">{sectionLabel}</span>
+      <span className="text-caption text-text-tertiary">{formatDate(item.created_at)}</span>
+    </div>
+  );
+}
+
 export function FeedItemComponent({
   item,
   index = 0,

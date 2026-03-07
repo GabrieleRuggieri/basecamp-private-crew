@@ -6,7 +6,7 @@ import { getSession } from '@/lib/actions/auth';
 export const dynamic = 'force-dynamic';
 import { getUnifiedFeed } from '@/lib/actions/feed';
 import { MemberAvatar } from '@/components/MemberAvatar';
-import { FeedItemComponent } from '@/components/FeedItem';
+import { FeedNotificationItem } from '@/components/FeedItem';
 import { LogoutButton } from '@/components/LogoutButton';
 import { Brain, Dumbbell, MapPin, BookOpen, Camera } from 'lucide-react';
 import Link from 'next/link';
@@ -83,13 +83,13 @@ export default async function HomePage() {
                       See all
                     </Link>
                   </div>
-                  <div className="space-y-3">
+                  <div className="space-y-0 divide-y divide-separator/50">
                     {items.slice(0, 3).map((item, i) => (
-                      <FeedItemComponent
+                      <FeedNotificationItem
                         key={`${key}-${item.id}`}
                         item={item}
+                        sectionLabel={label}
                         index={i}
-                        compact
                       />
                     ))}
                   </div>

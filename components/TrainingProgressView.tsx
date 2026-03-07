@@ -137,8 +137,8 @@ export function TrainingProgressView({
                       key={s.id}
                       className="py-2 border-b border-separator last:border-0"
                     >
-                      <div className="flex justify-between items-center gap-2">
-                        <div>
+                      <div className="flex justify-between items-center gap-3">
+                        <div className="flex items-center gap-1.5">
                           <span className="text-text-primary text-sm">
                             {new Date(s.date).toLocaleDateString('en-US', {
                               day: 'numeric',
@@ -147,16 +147,16 @@ export function TrainingProgressView({
                             })}
                           </span>
                           {s.mood != null && (
-                            <span className="ml-1.5">{MOOD_EMOJI[s.mood] ?? ''}</span>
+                            <span>{MOOD_EMOJI[s.mood] ?? ''}</span>
                           )}
                         </div>
-                        <div className="flex items-center gap-2">
-                          <span className={`text-[var(--${accent})] font-medium`}>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className={`text-[var(--${accent})] font-medium text-sm`}>
                             {formatDuration(s.duration_minutes)}
                           </span>
                           <Link
                             href={`/training/${type}/edit/${s.id}`}
-                            className="text-xs text-text-tertiary hover:text-accent-purple"
+                            className="text-xs text-text-tertiary hover:text-accent-purple whitespace-nowrap"
                           >
                             Edit
                           </Link>
@@ -249,18 +249,16 @@ export function TrainingProgressView({
                             {formatDuration(s.duration_minutes)}
                           </span>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <div className="text-right">
-                            <span className={`text-[var(--${accent})] font-medium`}>
-                              {s.km.toFixed(2)} km
-                            </span>
-                            <span className="text-text-tertiary text-xs block">
-                              {formatPace(s.pace_min_km)}/km
-                            </span>
-                          </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className={`text-[var(--${accent})] font-medium text-sm`}>
+                            {s.km.toFixed(2)} km
+                          </span>
+                          <span className="text-text-tertiary text-xs">
+                            {formatPace(s.pace_min_km)}/km
+                          </span>
                           <Link
                             href={`/training/running/edit/${s.id}`}
-                            className="text-xs text-text-tertiary hover:text-accent-purple"
+                            className="text-xs text-text-tertiary hover:text-accent-purple whitespace-nowrap"
                           >
                             Edit
                           </Link>
