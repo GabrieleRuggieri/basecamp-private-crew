@@ -55,7 +55,7 @@ export function BottomTabBar() {
             href={href}
             className={cn(
               'flex flex-col items-center justify-center gap-0.5 min-w-[52px] min-h-[50px] rounded-xl',
-              'transition-all duration-200 tap-target active:scale-95',
+              'transition-transform duration-150 tap-target active:scale-95 touch-manipulation',
               isActive ? accentClass : 'text-text-tertiary'
             )}
           >

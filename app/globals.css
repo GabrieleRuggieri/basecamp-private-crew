@@ -102,6 +102,7 @@
   .tap-target {
     min-height: 44px;
     min-width: 44px;
+    touch-action: manipulation; /* Rimuove delay 300ms su iOS Safari */
   }
 
   .section-title {
@@ -190,9 +191,9 @@
   display: none;
 }
 
-/* Page content fade */
+/* Page content fade — ridotto per navigazione più reattiva su mobile */
 .page-content {
-  animation: fade-in 0.4s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+  animation: fade-in 0.15s cubic-bezier(0.32, 0.72, 0, 1) forwards;
 }
 
 /* NFC animations */
