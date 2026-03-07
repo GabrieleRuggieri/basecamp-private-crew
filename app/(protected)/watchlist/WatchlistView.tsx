@@ -24,8 +24,10 @@ const TYPE_CONFIG: Record<string, { label: string; icon: typeof Film }> = {
 
 export function WatchlistView({
   items,
+  currentMemberId,
 }: {
   items: WatchlistItem[];
+  currentMemberId: string | null;
 }) {
   const router = useRouter();
   const [tab, setTab] = useState<Status>('want');
@@ -160,25 +162,33 @@ export function WatchlistView({
                     )}
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => openEdit(item)}
-                      className="text-xs text-text-tertiary hover:text-accent-orange"
-                    >
-                      Edit
-                    </button>
-                  <select
-                    value={item.status}
-                    onChange={async (e) => {
-                      await updateWatchlistStatus(item.id, e.target.value as Status);
-                      router.refresh();
-                    }}
-                    className="bg-surface-elevated text-text-primary rounded-lg px-3 py-2 text-sm border border-[var(--card-border)] focus:outline-none focus:ring-2 focus:ring-accent-orange/30"
-                  >
-                    <option value="want">Want</option>
-                    <option value="doing">Doing</option>
-                    <option value="done">Done</option>
-                  </select>
+                    {currentMemberId && item.member_id === currentMemberId ? (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => openEdit(item)}
+                          className="text-xs text-text-tertiary hover:text-accent-orange"
+                        >
+                          Edit
+                        </button>
+                        <select
+                          value={item.status}
+                          onChange={async (e) => {
+                            await updateWatchlistStatus(item.id, e.target.value as Status);
+                            router.refresh();
+                          }}
+                          className="bg-surface-elevated text-text-primary rounded-lg px-3 py-2 text-sm border border-[var(--card-border)] focus:outline-none focus:ring-2 focus:ring-accent-orange/30"
+                        >
+                          <option value="want">Want</option>
+                          <option value="doing">Doing</option>
+                          <option value="done">Done</option>
+                        </select>
+                      </>
+                    ) : (
+                      <span className="text-xs text-text-tertiary px-2 py-1 rounded bg-surface-elevated">
+                        {tabs.find((t) => t.id === item.status)?.label ?? item.status}
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>

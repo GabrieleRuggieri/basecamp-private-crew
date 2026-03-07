@@ -189,3 +189,134 @@ export async function createManualGymSession(
   revalidatePath('/home');
   revalidatePath('/training');
 }
+
+/** Modifica una sessione completata (solo il creatore). Aggiorna mood, note, duration e set. */
+export async function updateGymSession(
+  sessionId: string,
+  moodEmoji: string,
+  note: string,
+  durationMinutes: number,
+  sets: { exercise: string; weight_kg: number | null; sets_count: number; reps: string }[]
+): Promise<{ ok: boolean; error?: string }> {
+  const authSession = await getSession();
+  if (!authSession) return { ok: false, error: 'Not authenticated' };
+
+  const moodInt = MOOD_EMOJI_TO_INT[moodEmoji] ?? 3;
+
+  const { data: existing } = await supabase
+    .from('gym_sessions')
+    .select('id, member_id, type')
+    .eq('id', sessionId)
+    .single();
+
+  if (!existing || existing.member_id !== authSession.memberId) {
+    return { ok: false, error: 'Not authorized' };
+  }
+  if (existing.type === 'running') {
+    return { ok: false, error: 'Use updateRunningSession for running' };
+  }
+
+  const { error: updateError } = await supabase
+    .from('gym_sessions')
+    .update({
+      mood: moodInt,
+      note: note || null,
+      duration_minutes: durationMinutes,
+    })
+    .eq('id', sessionId)
+    .eq('member_id', authSession.memberId);
+
+  if (updateError) {
+    console.error('updateGymSession', updateError);
+    return { ok: false, error: updateError.message };
+  }
+
+  await supabase.from('gym_sets').delete().eq('session_id', sessionId);
+
+  const setsToInsert = sets
+    .filter((s) => s.exercise.trim())
+    .flatMap((s) => {
+      const repsArr = parseReps(s.reps, s.sets_count);
+      return Array.from({ length: s.sets_count }, (_, i) => ({
+        session_id: sessionId,
+        member_id: authSession.memberId,
+        exercise_name: s.exercise.trim(),
+        weight_kg: s.weight_kg,
+        reps: repsArr[i] ?? null,
+        set_number: 0,
+      }));
+    })
+    .map((s, i) => ({ ...s, set_number: i + 1 }));
+
+  if (setsToInsert.length > 0) {
+    const { error: insertError } = await supabase.from('gym_sets').insert(setsToInsert);
+    if (insertError) {
+      console.error('updateGymSession sets', insertError);
+      return { ok: false, error: insertError.message };
+    }
+  }
+
+  revalidatePath('/home');
+  revalidatePath('/training');
+  return { ok: true };
+}
+
+/** Recupera una sessione gym/tricking/calisthenics per modifica. */
+export async function getGymSessionForEdit(sessionId: string) {
+  const authSession = await getSession();
+  if (!authSession) return null;
+
+  const { data: gymSession } = await supabase
+    .from('gym_sessions')
+    .select('id, member_id, type, started_at, ended_at, duration_minutes, mood, note')
+    .eq('id', sessionId)
+    .eq('member_id', authSession.memberId)
+    .single();
+
+  if (!gymSession || !gymSession.ended_at) return null;
+
+  const MOOD_INT_TO_EMOJI: Record<number, string> = {
+    1: '💀',
+    2: '😓',
+    3: '😐',
+    4: '💪',
+    5: '🔥',
+  };
+
+  const { data: gymSets } = await supabase
+    .from('gym_sets')
+    .select('exercise_name, weight_kg, reps, set_number')
+    .eq('session_id', sessionId)
+    .neq('exercise_name', 'running')
+    .order('set_number');
+
+  const setsGrouped = (gymSets ?? []).reduce(
+    (acc, s) => {
+      const key = s.exercise_name;
+      if (!acc[key]) acc[key] = { weight_kg: s.weight_kg, reps: [] as (number | null)[] };
+      acc[key].reps.push(s.reps);
+      return acc;
+    },
+    {} as Record<string, { weight_kg: number | null; reps: (number | null)[] }>
+  );
+
+  const sets = Object.entries(setsGrouped).map(([exercise, { weight_kg, reps }]) => {
+    const repsStr = reps.every((r) => r === reps[0]) ? String(reps[0] ?? '') : reps.join('-');
+    return {
+      exercise,
+      weight_kg,
+      sets_count: reps.length,
+      reps: repsStr,
+    };
+  });
+
+  return {
+    id: gymSession.id,
+    type: gymSession.type as 'gym' | 'tricking' | 'calisthenics',
+    date: gymSession.started_at.slice(0, 10),
+    duration_minutes: gymSession.duration_minutes ?? 0,
+    mood: MOOD_INT_TO_EMOJI[gymSession.mood ?? 3] ?? '😐',
+    note: gymSession.note ?? '',
+    sets,
+  };
+}

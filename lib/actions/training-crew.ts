@@ -17,11 +17,13 @@ export type CrewMemberWithStats = {
 
 export type CrewSessionWithSets = {
   id: string;
+  member_id: string;
   started_at: string;
   ended_at: string | null;
   duration_minutes: number | null;
   mood: number | null;
-  sets: { exercise_name: string; weight_kg: number | null; reps: number | null }[];
+  note: string | null;
+  sets: { exercise_name: string; weight_kg: number | null; reps: number | null; km_distance?: number | null; pace_min_km?: number | null }[];
 };
 
 export type CrewMemberWithSessions = CrewMemberWithStats & {
@@ -69,7 +71,7 @@ export async function getCrewMembersWithSessions(
 
   const { data: allSessions } = await supabase
     .from('gym_sessions')
-    .select('id, member_id, started_at, ended_at, duration_minutes, mood')
+    .select('id, member_id, started_at, ended_at, duration_minutes, mood, note')
     .in('member_id', memberIds)
     .eq('type', type)
     .not('ended_at', 'is', null)
@@ -87,18 +89,24 @@ export async function getCrewMembersWithSessions(
 
   const keptSessionIds = [...sessionsByMember.values()].flat().map((s) => s!.id);
 
-  const setsBySession = new Map<string, { exercise_name: string; weight_kg: number | null; reps: number | null }[]>();
+  const setsBySession = new Map<string, { exercise_name: string; weight_kg: number | null; reps: number | null; km_distance?: number | null; pace_min_km?: number | null }[]>();
 
   if (keptSessionIds.length > 0) {
     const { data: allSets } = await supabase
       .from('gym_sets')
-      .select('session_id, exercise_name, weight_kg, reps, set_number')
+      .select('session_id, exercise_name, weight_kg, reps, set_number, km_distance, pace_min_km')
       .in('session_id', keptSessionIds)
       .order('set_number');
 
     for (const x of allSets ?? []) {
       const list = setsBySession.get(x.session_id) ?? [];
-      list.push({ exercise_name: x.exercise_name, weight_kg: x.weight_kg, reps: x.reps });
+      list.push({
+        exercise_name: x.exercise_name,
+        weight_kg: x.weight_kg,
+        reps: x.reps,
+        km_distance: x.km_distance ?? null,
+        pace_min_km: x.pace_min_km ?? null,
+      });
       setsBySession.set(x.session_id, list);
     }
   }
@@ -106,10 +114,12 @@ export async function getCrewMembersWithSessions(
   return members.map((m) => {
     const sessions = (sessionsByMember.get(m.id) ?? []).map((s) => ({
       id: s!.id,
+      member_id: s!.member_id,
       started_at: s!.started_at,
       ended_at: s!.ended_at,
       duration_minutes: s!.duration_minutes,
       mood: s!.mood,
+      note: s!.note ?? null,
       sets: setsBySession.get(s!.id) ?? [],
     })) as CrewSessionWithSets[];
 

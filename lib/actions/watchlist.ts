@@ -19,7 +19,6 @@ export async function getWatchlist() {
   const { data } = await supabase
     .from('watchlist')
     .select('id, member_id, title, type, status')
-    .eq('member_id', session.memberId)
     .order('added_at', { ascending: false });
 
   return data ?? [];

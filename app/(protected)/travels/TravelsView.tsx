@@ -10,6 +10,7 @@ import { BottomSheet } from '@/components/BottomSheet';
 
 type Travel = {
   id: string;
+  member_id: string;
   title: string;
   location: string;
   country_emoji: string | null;
@@ -22,8 +23,10 @@ type Filter = 'visited' | 'wishlist';
 
 export function TravelsView({
   travels,
+  currentMemberId,
 }: {
   travels: Travel[];
+  currentMemberId: string | null;
 }) {
   const router = useRouter();
   const [filter, setFilter] = useState<Filter>('visited');
@@ -131,13 +134,15 @@ export function TravelsView({
                   <p className="text-accent-green text-xs mt-1">{t.year}</p>
                 )}
               </div>
-              <button
-                type="button"
-                onClick={() => openEdit(t)}
-                className="text-xs text-text-tertiary hover:text-accent-blue shrink-0"
-              >
-                Edit
-              </button>
+              {currentMemberId && t.member_id === currentMemberId && (
+                <button
+                  type="button"
+                  onClick={() => openEdit(t)}
+                  className="text-xs text-text-tertiary hover:text-accent-blue shrink-0"
+                >
+                  Edit
+                </button>
+              )}
             </div>
           ))
         )}

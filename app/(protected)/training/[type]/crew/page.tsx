@@ -54,6 +54,7 @@ export default async function TrainingCrewPage({
               member={m}
               reactionsBySessionId={reactionsBySessionId}
               currentMemberId={session.memberId}
+              trainingType={type}
             />
           ))
         )}

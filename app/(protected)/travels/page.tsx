@@ -2,10 +2,11 @@
  * Travels: lista viaggi (visited/wishlist) con form add.
  */
 import { getTravels } from '@/lib/actions/travels';
+import { getSession } from '@/lib/actions/auth';
 import { TravelsView } from './TravelsView';
 
 export default async function TravelsPage() {
-  const travels = await getTravels();
+  const [travels, session] = await Promise.all([getTravels(), getSession()]);
 
   return (
     <main className="min-h-dvh">
@@ -15,7 +16,7 @@ export default async function TravelsPage() {
         </h1>
       </header>
 
-      <TravelsView travels={travels} />
+      <TravelsView travels={travels} currentMemberId={session?.memberId ?? null} />
     </main>
   );
 }

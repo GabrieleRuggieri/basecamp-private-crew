@@ -6,6 +6,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { MemberAvatar } from '@/components/MemberAvatar';
 import { addReaction, addComment, removeReaction } from '@/lib/actions/reactions';
 import type { ReactionSummary } from '@/lib/actions/reactions';
@@ -20,6 +21,13 @@ const MOOD_EMOJI: Record<number, string> = {
   5: '🔥',
 };
 import { ChevronDown, ChevronUp } from 'lucide-react';
+
+function formatPace(paceMinKm: number): string {
+  if (!paceMinKm) return '--:--';
+  const min = Math.floor(paceMinKm);
+  const sec = Math.round((paceMinKm - min) * 60);
+  return `${min}:${String(sec).padStart(2, '0')}`;
+}
 
 function formatSessionDate(endedAt: string | null) {
   if (!endedAt) return '—';
@@ -36,10 +44,12 @@ function SessionCard({
   session,
   reactionSummary,
   currentMemberId,
+  trainingType,
 }: {
   session: CrewSessionWithSets;
   reactionSummary?: ReactionSummary;
   currentMemberId: string;
+  trainingType: string;
 }) {
   const router = useRouter();
   const [commentDraft, setCommentDraft] = useState('');
@@ -68,7 +78,15 @@ function SessionCard({
     setIsSubmitting(false);
   }
 
+  const isRunning = trainingType === 'running';
+  const runningSet = session.sets.find((s) => s.exercise_name === 'running');
+  const runningText =
+    isRunning && runningSet?.km_distance
+      ? `${runningSet.km_distance.toFixed(2)} km${runningSet.pace_min_km ? ` · ${formatPace(runningSet.pace_min_km)}/km` : ''}`
+      : null;
+
   const setsSummary = session.sets
+    .filter((s) => s.exercise_name !== 'running')
     .reduce((acc, s) => {
       const key = s.exercise_name.trim() || '?';
       if (!acc[key]) acc[key] = [] as { w: number | null; r: number | null }[];
@@ -76,23 +94,41 @@ function SessionCard({
       return acc;
     }, {} as Record<string, { w: number | null; r: number | null }[]>);
 
-  const setsText = Object.entries(setsSummary)
-    .map(([ex, arr]) => `${ex}: ${formatSetsCompact(arr)}`)
-    .join(' · ');
+  const setsText = runningText ?? (Object.keys(setsSummary).length > 0
+    ? Object.entries(setsSummary)
+        .map(([ex, arr]) => `${ex}: ${formatSetsCompact(arr)}`)
+        .join(' · ')
+    : null);
+  const canEdit = session.member_id === currentMemberId;
 
   return (
     <div className="bg-surface-elevated rounded-lg p-3 border border-[var(--card-border)]">
-      <div className="flex items-center gap-2 text-footnote text-text-tertiary">
-        <span>{formatSessionDate(session.ended_at)}</span>
-        {session.duration_minutes != null && (
-          <span>· {session.duration_minutes} min</span>
-        )}
-        {session.mood != null && (
-          <span>{MOOD_EMOJI[session.mood] ?? ''}</span>
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 text-footnote text-text-tertiary">
+          <span>{formatSessionDate(session.ended_at)}</span>
+          {session.duration_minutes != null && (
+            <span>· {session.duration_minutes} min</span>
+          )}
+          {session.mood != null && (
+            <span>{MOOD_EMOJI[session.mood] ?? ''}</span>
+          )}
+        </div>
+        {canEdit && (
+          <Link
+            href={`/training/${trainingType}/edit/${session.id}`}
+            className="text-xs text-text-tertiary hover:text-accent-purple"
+          >
+            Edit
+          </Link>
         )}
       </div>
       {setsText && (
         <p className="text-sm text-text-secondary mt-1 whitespace-pre-wrap break-words">{setsText}</p>
+      )}
+      {session.note && (
+        <p className="text-sm text-text-secondary mt-1 italic whitespace-pre-wrap break-words">
+          {session.note}
+        </p>
       )}
 
       <div className="flex gap-2 mt-2 flex-wrap">
@@ -214,10 +250,12 @@ export function CrewMemberCardWithSessions({
   member,
   reactionsBySessionId,
   currentMemberId,
+  trainingType,
 }: {
   member: CrewMemberWithSessions;
   reactionsBySessionId: Map<string, ReactionSummary>;
   currentMemberId: string;
+  trainingType: string;
 }) {
   const [expanded, setExpanded] = useState(false);
   const limit = 3;
@@ -246,6 +284,7 @@ export function CrewMemberCardWithSessions({
               session={session}
               reactionSummary={reactionsBySessionId.get(session.id)}
               currentMemberId={currentMemberId}
+              trainingType={trainingType}
             />
           ))
         )}

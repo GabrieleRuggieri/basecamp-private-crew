@@ -26,6 +26,8 @@ export type RunningSessionEntry = {
   duration_minutes: number;
   km: number;
   pace_min_km: number;
+  mood: number | null;
+  note: string | null;
 };
 
 export async function addRunningSession(): Promise<string | null> {
@@ -168,7 +170,7 @@ export async function getRunningHistory(): Promise<{
 
   const { data: gymSessions } = await supabase
     .from('gym_sessions')
-    .select('id, started_at, duration_minutes')
+    .select('id, started_at, duration_minutes, mood, note')
     .eq('member_id', session.memberId)
     .eq('type', 'running')
     .not('ended_at', 'is', null)
@@ -198,9 +200,115 @@ export async function getRunningHistory(): Promise<{
         duration_minutes: s.duration_minutes ?? 0,
         km: data.km,
         pace_min_km: data.pace ?? 0,
+        mood: s.mood ?? null,
+        note: s.note ?? null,
       };
     })
     .filter((s): s is RunningSessionEntry => s !== null);
 
   return { sessions };
+}
+
+/** Modifica una sessione running completata (solo il creatore). */
+export async function updateRunningSession(
+  sessionId: string,
+  date: string,
+  durationMinutes: number,
+  km: number,
+  moodEmoji: string,
+  note: string
+): Promise<{ ok: boolean; error?: string }> {
+  const authSession = await getSession();
+  if (!authSession) return { ok: false, error: 'Not authenticated' };
+
+  const { data: existing } = await supabase
+    .from('gym_sessions')
+    .select('id, member_id')
+    .eq('id', sessionId)
+    .eq('member_id', authSession.memberId)
+    .single();
+
+  if (!existing) return { ok: false, error: 'Not authorized' };
+
+  const paceMinKm = durationMinutes / km;
+  const moodInt = MOOD_EMOJI_TO_INT[moodEmoji] ?? 3;
+  const endedAt = new Date(date + 'T12:00:00.000Z');
+  const startedAt = new Date(endedAt.getTime() - durationMinutes * 60 * 1000);
+
+  const { error: updateError } = await supabase
+    .from('gym_sessions')
+    .update({
+      started_at: startedAt.toISOString(),
+      ended_at: endedAt.toISOString(),
+      duration_minutes: durationMinutes,
+      mood: moodInt,
+      note: note || null,
+    })
+    .eq('id', sessionId)
+    .eq('member_id', authSession.memberId);
+
+  if (updateError) {
+    console.error('updateRunningSession', updateError);
+    return { ok: false, error: updateError.message };
+  }
+
+  const { data: existingSet } = await supabase
+    .from('gym_sets')
+    .select('id')
+    .eq('session_id', sessionId)
+    .eq('exercise_name', 'running')
+    .single();
+
+  if (existingSet) {
+    await supabase
+      .from('gym_sets')
+      .update({ km_distance: km, pace_min_km: paceMinKm })
+      .eq('session_id', sessionId)
+      .eq('exercise_name', 'running');
+  }
+
+  revalidatePath('/home');
+  revalidatePath('/training');
+  revalidatePath('/training/running');
+  return { ok: true };
+}
+
+/** Recupera una sessione running per modifica. */
+export async function getRunningSessionForEdit(sessionId: string) {
+  const authSession = await getSession();
+  if (!authSession) return null;
+
+  const { data: gymSession } = await supabase
+    .from('gym_sessions')
+    .select('id, started_at, duration_minutes, mood, note')
+    .eq('id', sessionId)
+    .eq('member_id', authSession.memberId)
+    .eq('type', 'running')
+    .single();
+
+  if (!gymSession || !gymSession.duration_minutes) return null;
+
+  const { data: gymSet } = await supabase
+    .from('gym_sets')
+    .select('km_distance')
+    .eq('session_id', sessionId)
+    .eq('exercise_name', 'running')
+    .single();
+
+  const MOOD_INT_TO_EMOJI: Record<number, string> = {
+    1: '💀',
+    2: '😓',
+    3: '😐',
+    4: '💪',
+    5: '🔥',
+  };
+
+  return {
+    id: sessionId,
+    date: gymSession.started_at.slice(0, 10),
+    duration_minutes: gymSession.duration_minutes,
+    km: gymSet?.km_distance ?? 0,
+    mood: MOOD_INT_TO_EMOJI[gymSession.mood ?? 3] ?? '😐',
+    note: gymSession.note ?? '',
+  };
 }

@@ -2,10 +2,11 @@
  * Watchlist: film/serie/libri con tab Want/Doing/Done, filtro tipo, form add.
  */
 import { getWatchlist } from '@/lib/actions/watchlist';
+import { getSession } from '@/lib/actions/auth';
 import { WatchlistView } from './WatchlistView';
 
 export default async function WatchlistPage() {
-  const items = await getWatchlist();
+  const [items, session] = await Promise.all([getWatchlist(), getSession()]);
 
   return (
     <main className="min-h-dvh relative overflow-hidden">
@@ -18,7 +19,7 @@ export default async function WatchlistPage() {
           Watchlist
         </h1>
       </header>
-      <WatchlistView items={items} />
+      <WatchlistView items={items} currentMemberId={session?.memberId ?? null} />
     </main>
   );
 }

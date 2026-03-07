@@ -133,14 +133,21 @@ export function FeedItemComponent({
               </>
             )}
             {isGym && (
-              <p
-                className={`text-text-primary ${compact ? 'text-footnote mt-1' : 'text-body mt-2'}`}
-              >
-                {trainingMeta.label} completato
-                {(item.payload as { mood?: string })?.mood && (
-                  <span className="ml-1.5">{(item.payload as { mood: string }).mood}</span>
+              <>
+                <p
+                  className={`text-text-primary ${compact ? 'text-footnote mt-1' : 'text-body mt-2'}`}
+                >
+                  {trainingMeta.label} completato
+                  {(item.payload as { mood?: string })?.mood && (
+                    <span className="ml-1.5">{(item.payload as { mood: string }).mood}</span>
+                  )}
+                </p>
+                {(item.payload as { note?: string })?.note && (
+                  <p className="text-text-secondary text-footnote mt-1 italic">
+                    {(item.payload as { note: string }).note}
+                  </p>
                 )}
-              </p>
+              </>
             )}
             {isTravel && (
               <p

@@ -28,7 +28,7 @@ export async function getGymHistory(type: TrainingType = 'gym') {
 
   const { data: sessions } = await supabase
     .from('gym_sessions')
-    .select('id, started_at, duration_minutes')
+    .select('id, member_id, started_at, duration_minutes, mood, note')
     .eq('member_id', session.memberId)
     .eq('type', type)
     .not('ended_at', 'is', null)
@@ -69,9 +69,12 @@ export async function getGymHistory(type: TrainingType = 'gym') {
   const sessionsList = sessions
     .map((s) => ({
       id: s.id,
+      member_id: s.member_id,
       date: s.started_at.slice(0, 10),
       duration_minutes: s.duration_minutes ?? 0,
       started_at: s.started_at,
+      mood: s.mood,
+      note: s.note ?? null,
       sets: setsBySession.get(s.id) ?? [],
     }))
     .sort((a, b) => b.started_at.localeCompare(a.started_at));

@@ -17,7 +17,6 @@ export async function getTravels() {
   const { data } = await supabase
     .from('travels')
     .select('id, member_id, title, location, country_emoji, status, year, note')
-    .eq('member_id', session.memberId)
     .order('created_at', { ascending: false });
 
   return data ?? [];

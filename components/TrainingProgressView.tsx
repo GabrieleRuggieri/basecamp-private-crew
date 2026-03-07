@@ -18,6 +18,7 @@ import {
 import { getGymHistory, getCrewProgress, type CrewProgressMember } from '@/lib/actions/training-progress';
 import { formatSetsCompact } from '@/lib/utils';
 import { getRunningHistory, type RunningSessionEntry } from '@/lib/actions/running';
+import Link from 'next/link';
 import { MemberAvatar } from '@/components/MemberAvatar';
 import type { TrainingType } from '@/lib/actions/training';
 
@@ -48,8 +49,11 @@ export function TrainingProgressView({
     volumeByDate: { date: string; volume: number }[];
     sessions: {
       id: string;
+      member_id?: string;
       date: string;
       duration_minutes: number;
+      mood?: number | null;
+      note?: string | null;
       sets?: { exercise_name: string; weight_kg: number | null; reps: number | null }[];
     }[];
   }>({ volumeByDate: [], sessions: [] });
@@ -121,25 +125,48 @@ export function TrainingProgressView({
                           .map(([ex, arr]) => `${ex}: ${formatSetsCompact(arr)}`)
                           .join(' · ')
                       : null;
+                  const MOOD_EMOJI: Record<number, string> = {
+                    1: '💀',
+                    2: '😓',
+                    3: '😐',
+                    4: '💪',
+                    5: '🔥',
+                  };
                   return (
                     <div
                       key={s.id}
                       className="py-2 border-b border-separator last:border-0"
                     >
-                      <div className="flex justify-between items-center">
-                        <span className="text-text-primary text-sm">
-                          {new Date(s.date).toLocaleDateString('en-US', {
-                            day: 'numeric',
-                            month: 'short',
-                            year: 'numeric',
-                          })}
-                        </span>
-                        <span className={`text-[var(--${accent})] font-medium`}>
-                          {formatDuration(s.duration_minutes)}
-                        </span>
+                      <div className="flex justify-between items-center gap-2">
+                        <div>
+                          <span className="text-text-primary text-sm">
+                            {new Date(s.date).toLocaleDateString('en-US', {
+                              day: 'numeric',
+                              month: 'short',
+                              year: 'numeric',
+                            })}
+                          </span>
+                          {s.mood != null && (
+                            <span className="ml-1.5">{MOOD_EMOJI[s.mood] ?? ''}</span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className={`text-[var(--${accent})] font-medium`}>
+                            {formatDuration(s.duration_minutes)}
+                          </span>
+                          <Link
+                            href={`/training/${type}/edit/${s.id}`}
+                            className="text-xs text-text-tertiary hover:text-accent-purple"
+                          >
+                            Edit
+                          </Link>
+                        </div>
                       </div>
                       {setsText && (
                         <p className="text-text-secondary text-xs mt-1 break-words">{setsText}</p>
+                      )}
+                      {s.note && (
+                        <p className="text-text-secondary text-xs mt-1 italic break-words">{s.note}</p>
                       )}
                     </div>
                   );
@@ -193,33 +220,58 @@ export function TrainingProgressView({
               <p className="text-text-tertiary text-sm">No sessions</p>
             ) : (
               <div className="space-y-2">
-                {runHistory.sessions.map((s) => (
-                  <div
-                    key={s.id}
-                    className="flex justify-between items-center py-2 border-b border-separator last:border-0"
-                  >
-                    <div>
-                      <span className="text-text-primary text-sm">
-                        {new Date(s.date).toLocaleDateString('en-US', {
-                          day: 'numeric',
-                          month: 'short',
-                          year: 'numeric',
-                        })}
-                      </span>
-                      <span className="text-text-tertiary text-xs ml-2">
-                        {formatDuration(s.duration_minutes)}
-                      </span>
+                {runHistory.sessions.map((s) => {
+                  const MOOD_EMOJI: Record<number, string> = {
+                    1: '💀',
+                    2: '😓',
+                    3: '😐',
+                    4: '💪',
+                    5: '🔥',
+                  };
+                  return (
+                    <div
+                      key={s.id}
+                      className="py-2 border-b border-separator last:border-0"
+                    >
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <span className="text-text-primary text-sm">
+                            {new Date(s.date).toLocaleDateString('en-US', {
+                              day: 'numeric',
+                              month: 'short',
+                              year: 'numeric',
+                            })}
+                          </span>
+                          {s.mood != null && (
+                            <span className="ml-1.5">{MOOD_EMOJI[s.mood] ?? ''}</span>
+                          )}
+                          <span className="text-text-tertiary text-xs ml-2">
+                            {formatDuration(s.duration_minutes)}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="text-right">
+                            <span className={`text-[var(--${accent})] font-medium`}>
+                              {s.km.toFixed(2)} km
+                            </span>
+                            <span className="text-text-tertiary text-xs block">
+                              {formatPace(s.pace_min_km)}/km
+                            </span>
+                          </div>
+                          <Link
+                            href={`/training/running/edit/${s.id}`}
+                            className="text-xs text-text-tertiary hover:text-accent-purple"
+                          >
+                            Edit
+                          </Link>
+                        </div>
+                      </div>
+                      {s.note && (
+                        <p className="text-text-secondary text-xs mt-1 italic break-words">{s.note}</p>
+                      )}
                     </div>
-                    <div className="text-right">
-                      <span className={`text-[var(--${accent})] font-medium`}>
-                        {s.km.toFixed(2)} km
-                      </span>
-                      <span className="text-text-tertiary text-xs block">
-                        {formatPace(s.pace_min_km)}/km
-                      </span>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
