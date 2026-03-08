@@ -275,3 +275,49 @@ export async function addPhotosToAlbum(
   revalidatePath('/moments');
   revalidatePath('/home');
 }
+
+export async function updateMomentCaption(momentId: string, caption: string | null): Promise<{ ok: boolean; error?: string }> {
+  const session = await getSession();
+  if (!session) return { ok: false, error: 'Non autenticato' };
+
+  const { data, error } = await supabase
+    .from('moments')
+    .update({ caption: caption?.trim() || null })
+    .eq('id', momentId)
+    .eq('member_id', session.memberId)
+    .select('id')
+    .single();
+
+  if (error) {
+    console.error('updateMomentCaption', error);
+    return { ok: false, error: error.message };
+  }
+  if (!data) return { ok: false, error: 'Non autorizzato' };
+
+  revalidatePath('/moments');
+  revalidatePath('/home');
+  return { ok: true };
+}
+
+export async function updateAlbumTitle(albumId: string, title: string | null): Promise<{ ok: boolean; error?: string }> {
+  const session = await getSession();
+  if (!session) return { ok: false, error: 'Non autenticato' };
+
+  const { data, error } = await supabase
+    .from('moment_albums')
+    .update({ title: title?.trim() || null })
+    .eq('id', albumId)
+    .eq('member_id', session.memberId)
+    .select('id')
+    .single();
+
+  if (error) {
+    console.error('updateAlbumTitle', error);
+    return { ok: false, error: error.message };
+  }
+  if (!data) return { ok: false, error: 'Non autorizzato' };
+
+  revalidatePath('/moments');
+  revalidatePath('/home');
+  return { ok: true };
+}

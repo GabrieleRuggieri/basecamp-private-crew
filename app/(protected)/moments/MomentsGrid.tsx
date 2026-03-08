@@ -37,16 +37,27 @@ function formatDate(iso: string) {
   return d.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
+type ViewingState = {
+  moments: MomentWithUrl[];
+  index: number;
+  isAlbum: boolean;
+  albumId?: string;
+  albumTitle?: string | null;
+  canEdit: boolean;
+};
+
 export function MomentsGrid({
   moments,
+  currentMemberId,
 }: {
   moments: MomentItem[];
+  currentMemberId: string | null;
 }) {
   const router = useRouter();
   const [uploading, setUploading] = useState(false);
   const [caption, setCaption] = useState('');
   const [previewFiles, setPreviewFiles] = useState<File[]>([]);
-  const [viewing, setViewing] = useState<{ moments: MomentWithUrl[]; index: number } | null>(null);
+  const [viewing, setViewing] = useState<ViewingState | null>(null);
   const [addToAlbum, setAddToAlbum] = useState<{ albumId: string; title: string } | null>(null);
   const [addToAlbumFiles, setAddToAlbumFiles] = useState<File[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -190,14 +201,26 @@ export function MomentsGrid({
                     <AlbumCard
                       key={item.album.id}
                       album={item.album}
-                      onPhotoClick={(index) => setViewing({ moments: item.album.moments, index })}
+                      onPhotoClick={(index) => setViewing({
+                        moments: item.album.moments,
+                        index,
+                        isAlbum: true,
+                        albumId: item.album.id,
+                        albumTitle: item.album.title,
+                        canEdit: !!currentMemberId && item.album.member_id === currentMemberId,
+                      })}
                       onAddPhotos={() => setAddToAlbum({ albumId: item.album.id, title: item.album.title ?? '' })}
                     />
                   ) : (
                     <MomentCard
                       key={item.moment.id}
                       moment={item.moment}
-                      onClick={() => setViewing({ moments: [item.moment], index: 0 })}
+                      onClick={() => setViewing({
+                        moments: [item.moment],
+                        index: 0,
+                        isAlbum: false,
+                        canEdit: !!currentMemberId && item.moment.member_id === currentMemberId,
+                      })}
                     />
                   )
                 )}
@@ -237,8 +260,20 @@ export function MomentsGrid({
         <Lightbox
           moments={viewing.moments}
           index={viewing.index}
+          isAlbum={viewing.isAlbum}
+          albumId={viewing.albumId}
+          albumTitle={viewing.albumTitle}
+          canEdit={viewing.canEdit}
           onClose={() => setViewing(null)}
           onIndexChange={(i) => setViewing((v) => (v ? { ...v, index: i } : null))}
+          onCaptionUpdate={(caption) => setViewing((v) => {
+            if (!v) return null;
+            const updated = [...v.moments];
+            updated[v.index] = { ...updated[v.index], caption };
+            return { ...v, moments: updated };
+          })}
+          onAlbumTitleUpdate={(title) => setViewing((v) => (v ? { ...v, albumTitle: title } : null))}
+          onRefresh={() => router.refresh()}
         />
       )}
     </div>
@@ -387,10 +422,10 @@ function AlbumCard({
         )}
       </div>
       <div className="p-3">
-        <p className="text-body text-text-primary line-clamp-1">
-          {album.title || `${album.moments.length} photos`}
-        </p>
-        <p className="text-footnote text-text-tertiary mt-0.5">{formatDate(album.created_at)}</p>
+        {album.title && (
+          <p className="text-body text-text-primary line-clamp-1">{album.title}</p>
+        )}
+        <p className={`text-footnote text-text-tertiary ${album.title ? 'mt-0.5' : ''}`}>{formatDate(album.created_at)}</p>
       </div>
     </article>
   );
@@ -399,27 +434,77 @@ function AlbumCard({
 function Lightbox({
   moments,
   index,
+  isAlbum,
+  albumId,
+  albumTitle,
+  canEdit,
   onClose,
   onIndexChange,
+  onCaptionUpdate,
+  onAlbumTitleUpdate,
+  onRefresh,
 }: {
   moments: MomentWithUrl[];
   index: number;
+  isAlbum: boolean;
+  albumId?: string;
+  albumTitle?: string | null;
+  canEdit: boolean;
   onClose: () => void;
   onIndexChange: (i: number) => void;
+  onCaptionUpdate: (caption: string | null) => void;
+  onAlbumTitleUpdate: (title: string | null) => void;
+  onRefresh: () => void;
 }) {
+  const [editing, setEditing] = useState(false);
+  const [editValue, setEditValue] = useState('');
+  const [saving, setSaving] = useState(false);
   const m = moments[index];
   const hasMultiple = moments.length > 1;
+
+  const displayTitle = isAlbum ? albumTitle : m.caption;
+  const startEdit = () => {
+    setEditValue(isAlbum ? (albumTitle ?? '') : (m.caption ?? ''));
+    setEditing(true);
+  };
+
+  const saveEdit = async () => {
+    if (saving) return;
+    setSaving(true);
+    try {
+      if (isAlbum && albumId) {
+        const { updateAlbumTitle } = await import('@/lib/actions/moments');
+        const res = await updateAlbumTitle(albumId, editValue.trim() || null);
+        if (res.ok) {
+          onAlbumTitleUpdate(editValue.trim() || null);
+          onRefresh();
+        }
+      } else {
+        const { updateMomentCaption } = await import('@/lib/actions/moments');
+        const res = await updateMomentCaption(m.id, editValue.trim() || null);
+        if (res.ok) {
+          onCaptionUpdate(editValue.trim() || null);
+          onRefresh();
+        }
+      }
+      setEditing(false);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const navButtonClass = 'absolute top-1/2 -translate-y-1/2 w-12 h-12 min-w-[48px] min-h-[48px] rounded-full flex items-center justify-center text-white text-2xl font-light shadow-lg touch-manipulation active:scale-95 transition-transform';
 
   return (
     <div className="fixed inset-0 z-[200] bg-black flex flex-col" onClick={onClose}>
       <button
         onClick={onClose}
-        className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white text-xl"
+        className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-black/60 flex items-center justify-center text-white text-xl touch-manipulation"
         aria-label="Close"
       >
         ×
       </button>
-      <div className="flex-1 flex items-center justify-center p-4 min-h-0" onClick={(e) => e.stopPropagation()}>
+      <div className="flex-1 flex items-center justify-center p-4 min-h-0 relative" onClick={(e) => e.stopPropagation()}>
         {m.imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -438,7 +523,8 @@ function Lightbox({
                 e.stopPropagation();
                 onIndexChange((index - 1 + moments.length) % moments.length);
               }}
-              className="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white text-xl"
+              className={`left-2 ${navButtonClass}`}
+              style={{ backgroundColor: 'rgba(0,0,0,0.6)' }}
               aria-label="Precedente"
             >
               ‹
@@ -448,7 +534,8 @@ function Lightbox({
                 e.stopPropagation();
                 onIndexChange((index + 1) % moments.length);
               }}
-              className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white text-xl"
+              className={`right-2 ${navButtonClass}`}
+              style={{ backgroundColor: 'rgba(0,0,0,0.6)' }}
               aria-label="Successiva"
             >
               ›
@@ -456,12 +543,57 @@ function Lightbox({
           </>
         )}
       </div>
-      <div className="p-4 safe-area-bottom bg-black/80 text-white" onClick={(e) => e.stopPropagation()}>
-        {m.caption && <p className="text-body">{m.caption}</p>}
-        <p className="text-footnote text-text-tertiary mt-1">
-          {hasMultiple ? `${index + 1} / ${moments.length} · ` : ''}
-          {formatDate(m.taken_at)}
-        </p>
+      <div className="p-4 safe-area-bottom bg-black/90 text-white" onClick={(e) => e.stopPropagation()}>
+        {editing ? (
+          <div className="space-y-2">
+            <input
+              type="text"
+              value={editValue}
+              onChange={(e) => setEditValue(e.target.value)}
+              placeholder={isAlbum ? 'Titolo album' : 'Didascalia'}
+              className="w-full bg-white/10 rounded-lg px-4 py-3 text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-accent-green/50"
+              autoFocus
+            />
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setEditing(false)}
+                className="flex-1 py-2 rounded-lg bg-white/10 text-white"
+              >
+                Annulla
+              </button>
+              <button
+                type="button"
+                onClick={saveEdit}
+                disabled={saving}
+                className="flex-1 py-2 rounded-lg bg-accent-green text-white font-medium disabled:opacity-60"
+              >
+                {saving ? 'Salvataggio...' : 'Salva'}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <>
+            {(displayTitle || canEdit) && (
+              <div className="flex items-center justify-between gap-2">
+                {displayTitle && <p className="text-body flex-1 min-w-0">{displayTitle}</p>}
+                {canEdit && (
+                  <button
+                    type="button"
+                    onClick={startEdit}
+                    className={`text-footnote text-accent-green shrink-0 ${displayTitle ? '' : 'ml-auto'}`}
+                  >
+                    Modifica
+                  </button>
+                )}
+              </div>
+            )}
+            <p className="text-footnote text-white/60 mt-1">
+              {hasMultiple ? `${index + 1} / ${moments.length} · ` : ''}
+              {formatDate(m.taken_at)}
+            </p>
+          </>
+        )}
       </div>
     </div>
   );
@@ -480,12 +612,10 @@ function MomentCard({ moment, onClick }: { moment: MomentWithUrl; onClick: () =>
         <MomentImage url={moment.imageUrl} />
       </div>
       <div className="p-3">
-        {moment.caption ? (
+        {moment.caption && (
           <p className="text-body text-text-primary line-clamp-2">{moment.caption}</p>
-        ) : (
-          <p className="text-footnote text-text-tertiary italic">Untitled</p>
         )}
-        <p className="text-footnote text-text-tertiary mt-1">{formatDate(moment.taken_at)}</p>
+        <p className={`text-footnote text-text-tertiary ${moment.caption ? 'mt-1' : ''}`}>{formatDate(moment.taken_at)}</p>
       </div>
     </article>
   );

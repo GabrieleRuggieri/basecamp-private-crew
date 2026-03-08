@@ -2,10 +2,11 @@
  * Moments: upload foto, griglia con signed URLs (bucket privato).
  */
 import { getMoments } from '@/lib/actions/moments';
+import { getSession } from '@/lib/actions/auth';
 import { MomentsGrid } from '@/app/(protected)/moments/MomentsGrid';
 
 export default async function MomentsPage() {
-  const moments = await getMoments();
+  const [moments, session] = await Promise.all([getMoments(), getSession()]);
 
   return (
     <main className="min-h-dvh">
@@ -15,7 +16,7 @@ export default async function MomentsPage() {
         </h1>
       </header>
 
-      <MomentsGrid moments={moments} />
+      <MomentsGrid moments={moments} currentMemberId={session?.memberId ?? null} />
     </main>
   );
 }
